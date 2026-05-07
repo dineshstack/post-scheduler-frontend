@@ -3,11 +3,9 @@
 import { useState } from 'react'
 import { Loader2, Sparkles, Copy, Check } from 'lucide-react'
 import { toast } from 'sonner'
-import { analyticsApi } from '@/lib/api'
+import { aiApi } from '@/lib/api'
 import { Button, Modal, Select, Textarea } from '@/components/ui'
 import type { Platform } from '@/lib/types'
-import { analyticsApi as _unused } from '@/lib/api'
-import aiApi from '@/lib/api'
 
 const PLATFORMS = [
   { value: 'twitter',   label: 'Twitter / X' },

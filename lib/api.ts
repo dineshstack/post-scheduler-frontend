@@ -248,6 +248,19 @@ export const galleryApi = {
   },
 }
 
+// AI
+
+export const aiApi = {
+  generateCaption: async (payload: {
+    topic: string
+    platform: string
+    tone: string
+  }): Promise<{ caption: string; hashtags: string[] }> => {
+    const { data } = await http.post<{ caption: string; hashtags: string[] }>('/ai/caption', payload)
+    return data
+  },
+}
+
 // Analytics
 
 export const analyticsApi = {
