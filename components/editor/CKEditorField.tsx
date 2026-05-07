@@ -40,7 +40,7 @@ class GalleryUploadAdapter {
     form.append('images[]', file)
 
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/gallery`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/gallery`,
       {
         method:  'POST',
         headers: { Authorization: `Bearer ${token ?? ''}`, Accept: 'application/json' },

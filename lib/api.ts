@@ -18,18 +18,14 @@ import type {
   User,
 } from '@/lib/types'
 
-//  Axios instance 
-
 const http: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL + '/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL + '/api/v1',
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
   withCredentials: true,
 })
-
-//  Request interceptor  attach Bearer token 
 
 http.interceptors.request.use((config) => {
   const token = Cookies.get('scheduler_token')
@@ -39,13 +35,10 @@ http.interceptors.request.use((config) => {
   return config
 })
 
-//  Response interceptor  handle 401 globally 
-
 http.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid  clear cookie and redirect
       Cookies.remove('scheduler_token')
       if (typeof window !== 'undefined') {
         window.location.href = '/auth/login?expired=true'
@@ -55,11 +48,9 @@ http.interceptors.response.use(
   }
 )
 
-//  Token helpers 
-
 export const setAuthToken = (token: string) => {
   Cookies.set('scheduler_token', token, {
-    expires: 30,        // 30 days
+    expires: 30,
     sameSite: 'Lax',
     secure: process.env.NODE_ENV === 'production',
   })
@@ -73,34 +64,30 @@ export const getAuthToken = (): string | undefined => {
   return Cookies.get('scheduler_token')
 }
 
-// 
-// API methods
-// 
-
-//  Auth 
+// Auth
 
 export const authApi = {
   register: async (payload: RegisterPayload): Promise<AuthResponse> => {
-    const { data } = await http.post<AuthResponse>('/register', payload)
+    const { data } = await http.post<AuthResponse>('/auth/register', payload)
     return data
   },
 
   login: async (payload: LoginPayload): Promise<AuthResponse> => {
-    const { data } = await http.post<AuthResponse>('/login', payload)
+    const { data } = await http.post<AuthResponse>('/auth/login', payload)
     return data
   },
 
   logout: async (): Promise<void> => {
-    await http.post('/logout')
+    await http.post('/auth/logout')
   },
 
   me: async (): Promise<User> => {
-    const { data } = await http.get<{ user: User }>('/me')
+    const { data } = await http.get<{ user: User }>('/auth/me')
     return data.user
   },
 
   updateProfile: async (payload: Partial<Pick<User, 'name' | 'timezone' | 'avatar'>>): Promise<User> => {
-    const { data } = await http.put<{ user: User }>('/me', payload)
+    const { data } = await http.put<{ user: User }>('/auth/me', payload)
     return data.user
   },
 
@@ -109,11 +96,11 @@ export const authApi = {
     password: string
     password_confirmation: string
   }): Promise<void> => {
-    await http.put('/me/password', payload)
+    await http.put('/auth/me/password', payload)
   },
 }
 
-//  Posts 
+// Posts
 
 export const postsApi = {
   list: async (params?: {
@@ -160,7 +147,7 @@ export const postsApi = {
   },
 }
 
-//  Platform Accounts 
+// Platform Accounts
 
 export const platformAccountsApi = {
   list: async (): Promise<PlatformAccount[]> => {
@@ -180,7 +167,7 @@ export const platformAccountsApi = {
   },
 
   getOAuthRedirectUrl: (platform: string): string => {
-    return `${process.env.NEXT_PUBLIC_API_URL}/api/auth/${platform}/redirect`
+    return `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/${platform}/redirect`
   },
 
   connectBlog: async (blogToken: string, accountName: string): Promise<PlatformAccount> => {
@@ -192,7 +179,7 @@ export const platformAccountsApi = {
   },
 }
 
-//  Gallery / Media Library 
+// Gallery / Media Library
 
 export const galleryApi = {
   browse: async (folderId?: number): Promise<MediaLibrary | GalleryFolder> => {
@@ -221,7 +208,7 @@ export const galleryApi = {
   },
 
   createFolder: async (name: string, folderId?: number): Promise<GalleryFolder> => {
-    const { data } = await http.post<{ folder: GalleryFolder }>('/folder', {
+    const { data } = await http.post<{ folder: GalleryFolder }>('/folders', {
       name,
       folder_id: folderId ?? null,
     })
@@ -229,7 +216,7 @@ export const galleryApi = {
   },
 
   deleteFolder: async (id: number): Promise<void> => {
-    await http.delete(`/folder/${id}`)
+    await http.delete(`/folders/${id}`)
   },
 
   trash: async (): Promise<TrashContents> => {
