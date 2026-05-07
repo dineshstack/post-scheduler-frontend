@@ -24,7 +24,7 @@ const http: AxiosInstance = axios.create({
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
-  withCredentials: true,
+  // withCredentials: true,
 })
 
 http.interceptors.request.use((config) => {
