@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import {
@@ -162,9 +162,9 @@ function BlogConnectModal({ open, onClose }: { open: boolean; onClose: () => voi
   )
 }
 
-//  Page 
+//  Page
 
-export default function ConnectionsPage() {
+function ConnectionsContent() {
   const searchParams = useSearchParams()
   const { data: accounts, isLoading, refetch } = usePlatformAccounts()
   const [blogModalOpen, setBlogModalOpen] = useState(false)
@@ -189,72 +189,80 @@ export default function ConnectionsPage() {
   const blogAccount = accounts?.find((a) => a.platform === 'blog')
 
   return (
-    <AppLayout title="Connections">
-      <div className="max-w-2xl space-y-5">
+    <div className="max-w-2xl space-y-5">
 
-        {/* OAuth platforms */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Social Platforms</CardTitle>
-            <Button variant="ghost" size="sm" onClick={() => refetch()}>
-              <RefreshCw className="h-3.5 w-3.5" />
-            </Button>
-          </CardHeader>
-          {isLoading ? (
-            <div className="py-8 text-center text-sm text-[var(--text-muted)]">Loading</div>
-          ) : (
-            <div className="divide-y divide-[var(--line)]">
-              {OAUTH_PLATFORMS.map(({ platform, label, icon, description }) => (
-                <OAuthPlatformCard
-                  key={platform}
-                  platform={platform}
-                  label={label}
-                  icon={icon}
-                  description={description}
-                  account={getAccount(platform)}
-                />
-              ))}
-            </div>
-          )}
-        </Card>
-
-        {/* Blog platform */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Blog (DineshStack)</CardTitle>
-          </CardHeader>
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl leading-none">📝</span>
-              <div>
-                <p className="text-sm font-medium text-[var(--text-base)]">DineshStack Blog</p>
-                {blogAccount ? (
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                    <p className="text-xs text-[var(--text-muted)]">Connected as {blogAccount.account_name}</p>
-                  </div>
-                ) : (
-                  <p className="text-xs text-[var(--text-faint)]">Auto-publish to your Laravel blog</p>
-                )}
-              </div>
-            </div>
-            {blogAccount ? (
-              <Button variant="secondary" size="sm" onClick={() => setBlogModalOpen(true)}>
-                Reconnect
-              </Button>
-            ) : (
-              <Button size="sm" onClick={() => setBlogModalOpen(true)}>
-                <ExternalLink className="h-3.5 w-3.5" /> Connect
-              </Button>
-            )}
+      {/* OAuth platforms */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Social Platforms</CardTitle>
+          <Button variant="ghost" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="h-3.5 w-3.5" />
+          </Button>
+        </CardHeader>
+        {isLoading ? (
+          <div className="py-8 text-center text-sm text-[var(--text-muted)]">Loading</div>
+        ) : (
+          <div className="divide-y divide-[var(--line)]">
+            {OAUTH_PLATFORMS.map(({ platform, label, icon, description }) => (
+              <OAuthPlatformCard
+                key={platform}
+                platform={platform}
+                label={label}
+                icon={icon}
+                description={description}
+                account={getAccount(platform)}
+              />
+            ))}
           </div>
-        </Card>
-      </div>
+        )}
+      </Card>
+
+      {/* Blog platform */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Blog (DineshStack)</CardTitle>
+        </CardHeader>
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl leading-none">📝</span>
+            <div>
+              <p className="text-sm font-medium text-[var(--text-base)]">DineshStack Blog</p>
+              {blogAccount ? (
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                  <p className="text-xs text-[var(--text-muted)]">Connected as {blogAccount.account_name}</p>
+                </div>
+              ) : (
+                <p className="text-xs text-[var(--text-faint)]">Auto-publish to your Laravel blog</p>
+              )}
+            </div>
+          </div>
+          {blogAccount ? (
+            <Button variant="secondary" size="sm" onClick={() => setBlogModalOpen(true)}>
+              Reconnect
+            </Button>
+          ) : (
+            <Button size="sm" onClick={() => setBlogModalOpen(true)}>
+              <ExternalLink className="h-3.5 w-3.5" /> Connect
+            </Button>
+          )}
+        </div>
+      </Card>
 
       <BlogConnectModal
         open={blogModalOpen}
         onClose={() => { setBlogModalOpen(false); refetch() }}
       />
+    </div>
+  )
+}
+
+export default function ConnectionsPage() {
+  return (
+    <AppLayout title="Connections">
+      <Suspense>
+        <ConnectionsContent />
+      </Suspense>
     </AppLayout>
   )
 }
