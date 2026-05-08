@@ -71,6 +71,7 @@ export interface Post {
   published_at: string | null
   status: PostStatus
   blog_slug: string | null
+  blog_post_type: 'article' | 'tutorial' | 'case_study' | null
   blog_post_id: number | null
   notes: string | null
   created_at: string
@@ -100,6 +101,7 @@ export interface StorePostPayload {
   status?: 'draft' | 'scheduled'
   notes?: string
   blog_slug?: string
+  blog_post_type?: 'article' | 'tutorial' | 'case_study'
 }
 
 //  Calendar 

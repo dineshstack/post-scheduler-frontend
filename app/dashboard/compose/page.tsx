@@ -38,13 +38,14 @@ const labelCls = 'block text-xs font-semibold text-[var(--text-muted)] uppercase
 //  Schema 
 
 const schema = z.object({
-  title:        z.string().min(1, 'Title is required'),
-  body:         z.string().min(1, 'Body is required'),
-  platforms:    z.array(z.string()).min(1, 'Select at least one platform'),
-  scheduled_at: z.string().nullable().optional(),
-  blog_slug:    z.string().optional(),
-  notes:        z.string().optional(),
-  overrides:    z.record(z.object({ body: z.string().optional() })).optional(),
+  title:          z.string().min(1, 'Title is required'),
+  body:           z.string().min(1, 'Body is required'),
+  platforms:      z.array(z.string()).min(1, 'Select at least one platform'),
+  scheduled_at:   z.string().nullable().optional(),
+  blog_slug:      z.string().optional(),
+  blog_post_type: z.enum(['article', 'tutorial', 'case_study']).optional(),
+  notes:          z.string().optional(),
+  overrides:      z.record(z.object({ body: z.string().optional() })).optional(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -163,7 +164,7 @@ export default function ComposePage() {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { title: '', body: '', platforms: [], scheduled_at: null, blog_slug: '', notes: '', overrides: {} },
+    defaultValues: { title: '', body: '', platforms: [], scheduled_at: null, blog_slug: '', blog_post_type: 'article', notes: '', overrides: {} },
   })
 
   const watchedPlatforms = watch('platforms') as Platform[]
@@ -190,6 +191,7 @@ export default function ComposePage() {
         scheduled_at:            action === 'schedule' ? values.scheduled_at ?? null : null,
         status:                  action === 'draft' ? 'draft' : 'scheduled',
         blog_slug:               hasBlog ? values.blog_slug : undefined,
+        blog_post_type:          hasBlog ? (values.blog_post_type ?? 'article') : undefined,
         notes:                   values.notes,
       },
       { onSuccess: () => router.push('/dashboard/posts') }
@@ -373,6 +375,17 @@ export default function ComposePage() {
           {hasBlog && (
             <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-card)] p-4 space-y-3">
               <h3 className="font-semibold text-sm text-[var(--text-base)]">Blog settings</h3>
+              <div>
+                <label className={labelCls}>Post type *</label>
+                <select
+                  {...register('blog_post_type')}
+                  className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface-subtle)] px-4 py-2.5 text-sm text-[var(--text-base)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] transition-colors"
+                >
+                  <option value="article">Article</option>
+                  <option value="tutorial">Tutorial</option>
+                  <option value="case_study">Case Study</option>
+                </select>
+              </div>
               <Input
                 label="Slug (optional)"
                 placeholder="my-awesome-post"
