@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import AppLayout from '@/components/layout/AppLayout'
 import { Card, CardContent, CardHeader, CardTitle, PlatformChips, StatusBadge } from '@/components/ui'
-import { useAnalyticsOverview, useAnalyticsTimeSeries } from '@/lib/hooks'
+import { useAnalyticsBestTimes, useAnalyticsOverview, useAnalyticsTimeSeries } from '@/lib/hooks'
 import type { Platform } from '@/lib/types'
 
 // Date range presets
@@ -88,8 +88,9 @@ export default function AnalyticsPage() {
   const to   = useMemo(() => format(new Date(), 'yyyy-MM-dd'), [])
   const from = useMemo(() => format(subDays(new Date(), days), 'yyyy-MM-dd'), [days])
 
-  const { data: overview, isLoading: loadingOverview } = useAnalyticsOverview(from, to)
-  const { data: ts,       isLoading: loadingTs }       = useAnalyticsTimeSeries(from, to)
+  const { data: overview,   isLoading: loadingOverview } = useAnalyticsOverview(from, to)
+  const { data: ts,         isLoading: loadingTs }       = useAnalyticsTimeSeries(from, to)
+  const { data: bestTimes }                              = useAnalyticsBestTimes()
 
   const isDark    = resolvedTheme === 'dark'
   const gridColor = isDark ? '#2a3547' : '#dde3ed'
@@ -370,6 +371,50 @@ export default function AnalyticsPage() {
                 </Card>
               ))}
             </div>
+          )}
+
+          {/* Best times to post */}
+          {bestTimes && bestTimes.best_times && Object.keys(bestTimes.best_times).length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Best times to post</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {Object.entries(bestTimes.best_times).map(([platform, slots]) => (
+                    <div key={platform}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span
+                          className="h-2 w-2 rounded-full"
+                          style={{ background: PLATFORM_COLORS[platform] ?? '#6366f1' }}
+                        />
+                        <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">
+                          {PLATFORM_LABELS[platform] ?? platform}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {slots?.slice(0, 5).map((slot, i) => (
+                          <span
+                            key={i}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-[var(--surface-subtle)] border border-[var(--line)] text-[var(--text-muted)]"
+                          >
+                            {slot.day_name} {slot.hour_label}
+                            {i === 0 && (
+                              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-[var(--accent-subtle)] text-[var(--accent-text)] text-[10px]">
+                                Best
+                              </span>
+                            )}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-[var(--text-faint)] mt-4">
+                  Based on your historical publish success rate. Times are in your local timezone.
+                </p>
+              </CardContent>
+            </Card>
           )}
 
         </div>

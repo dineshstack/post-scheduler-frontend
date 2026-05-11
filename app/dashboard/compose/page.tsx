@@ -6,11 +6,13 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import dynamic from 'next/dynamic'
-import { ChevronDown, ChevronUp, Image, Loader2, Plus, Save, Send, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, Clock, Image, Loader2, Plus, Save, Send, Sparkles, X } from 'lucide-react'
 import AppLayout from '@/components/layout/AppLayout'
 import { Button, Input, Textarea, DateTimePicker } from '@/components/ui'
 import MediaLibraryModal from '@/components/media/MediaLibraryModal'
-import { usePlatformAccounts, useCreatePost } from '@/lib/hooks'
+import CaptionGenerator from '@/components/ai/CaptionGenerator'
+import BlogSettingsPanel from '@/components/blog/BlogSettingsPanel'
+import { useAnalyticsBestTimes, useCreatePost, usePlatformAccounts } from '@/lib/hooks'
 import type { Platform, GalleryItem } from '@/lib/types'
 
 const CKEditorField = dynamic(() => import('@/components/editor/CKEditorField'), {
@@ -45,7 +47,24 @@ const schema = z.object({
   blog_slug:      z.string().optional(),
   blog_post_type: z.enum(['article', 'tutorial', 'case_study']).optional(),
   notes:          z.string().optional(),
-  overrides:      z.record(z.object({ body: z.string().optional() })).optional(),
+  first_comment:  z.string().max(2200).optional(),
+  overrides: z.record(z.object({
+    body:             z.string().optional(),
+    excerpt:          z.string().max(500).optional(),
+    category_id:      z.number().optional(),
+    tags:             z.array(z.string()).optional(),
+    meta_title:       z.string().max(70).optional(),
+    meta_description: z.string().max(160).optional(),
+    canonical_url:    z.string().optional(),
+    is_featured:      z.boolean().optional(),
+    allow_comments:   z.boolean().optional(),
+    case_study: z.object({
+      client: z.string().optional(), industry: z.string().optional(),
+      challenge: z.string().optional(), solution: z.string().optional(),
+      results: z.string().optional(), technologies: z.array(z.string()).optional(),
+      project_url: z.string().optional(), duration: z.string().optional(),
+    }).optional(),
+  })).optional(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -149,11 +168,13 @@ export default function ComposePage() {
   const router = useRouter()
   const { data: accounts } = usePlatformAccounts()
   const { mutate: createPost, isPending } = useCreatePost()
+  const { data: bestTimes } = useAnalyticsBestTimes()
 
   const [mediaOpen, setMediaOpen]       = useState(false)
   const [mediaItems, setMediaItems]     = useState<GalleryItem[]>([])
   const [scheduleMode, setScheduleMode] = useState<'now' | 'schedule'>('now')
   const [coverPreview, setCoverPreview] = useState('')
+  const [aiOpen, setAiOpen]             = useState(false)
 
   const connectedPlatforms = (accounts ?? [])
     .filter((a) => a.is_active)
@@ -193,6 +214,7 @@ export default function ComposePage() {
         blog_slug:               hasBlog ? values.blog_slug : undefined,
         blog_post_type:          hasBlog ? (values.blog_post_type ?? 'article') : undefined,
         notes:                   values.notes,
+        first_comment:           values.first_comment || undefined,
       },
       { onSuccess: () => router.push('/dashboard/posts') }
     )
@@ -225,7 +247,16 @@ export default function ComposePage() {
 
           {/* Rich body editor */}
           <div>
-            <label className={labelCls}>Content *</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className={labelCls} style={{ marginBottom: 0 }}>Content *</label>
+              <button
+                type="button"
+                onClick={() => setAiOpen(true)}
+                className="flex items-center gap-1.5 text-xs font-medium text-[var(--accent)] hover:text-[var(--accent-text)] transition-colors"
+              >
+                <Sparkles className="h-3.5 w-3.5" /> Generate with AI
+              </button>
+            </div>
             <Controller
               name="body"
               control={control}
@@ -269,16 +300,35 @@ export default function ComposePage() {
             </div>
 
             {scheduleMode === 'schedule' && (
-              <Controller
-                name="scheduled_at"
-                control={control}
-                render={({ field }) => (
-                  <DateTimePicker
-                    value={field.value ?? ''}
-                    onChange={field.onChange}
-                  />
+              <>
+                <Controller
+                  name="scheduled_at"
+                  control={control}
+                  render={({ field }) => (
+                    <DateTimePicker
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                    />
+                  )}
+                />
+                {/* Best-time hints */}
+                {watchedPlatforms.length > 0 && bestTimes && (
+                  <div className="space-y-1.5">
+                    {watchedPlatforms.map((p) => {
+                      const top = bestTimes.best_times[p]?.[0]
+                      if (!top) return null
+                      return (
+                        <div key={p} className="flex items-center gap-1.5 text-[11px] text-[var(--text-faint)]">
+                          <Clock className="h-3 w-3 shrink-0" />
+                          <span>
+                            Best for {p}: <span className="text-[var(--text-muted)] font-medium">{top.day_name} {top.hour_label}</span>
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
                 )}
-              />
+              </>
             )}
 
             <div className="flex flex-col gap-2 pt-1">
@@ -373,8 +423,10 @@ export default function ComposePage() {
 
           {/* Blog-specific */}
           {hasBlog && (
-            <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-card)] p-4 space-y-3">
+            <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-card)] p-4 space-y-4">
               <h3 className="font-semibold text-sm text-[var(--text-base)]">Blog settings</h3>
+
+              {/* Post type */}
               <div>
                 <label className={labelCls}>Post type *</label>
                 <select
@@ -386,11 +438,20 @@ export default function ComposePage() {
                   <option value="case_study">Case Study</option>
                 </select>
               </div>
+
+              {/* Slug */}
               <Input
                 label="Slug (optional)"
                 placeholder="my-awesome-post"
-                hint="Customize the URL slug"
+                hint="Leave blank to auto-generate from title"
                 {...register('blog_slug')}
+              />
+
+              {/* All blog metadata */}
+              <BlogSettingsPanel
+                value={watchedOverrides['blog'] ?? {}}
+                onChange={(v) => setValue('overrides.blog', v, { shouldDirty: true })}
+                postType={watch('blog_post_type') as 'article' | 'tutorial' | 'case_study' | undefined}
               />
             </div>
           )}
@@ -404,8 +465,29 @@ export default function ComposePage() {
               {...register('notes')}
             />
           </div>
+
+          {/* First comment */}
+          <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-card)] p-4">
+            <Textarea
+              label="First comment"
+              placeholder="Auto-posted as a comment seconds after publishing (e.g. hashtags, CTA)"
+              rows={3}
+              charLimit={2200}
+              {...register('first_comment')}
+            />
+          </div>
         </div>
       </form>
+
+      <CaptionGenerator
+        open={aiOpen}
+        onClose={() => setAiOpen(false)}
+        defaultPlatform={watchedPlatforms[0]}
+        onInsert={(caption, hashtags) => {
+          const text = hashtags.length ? `${caption}\n\n${hashtags.join(' ')}` : caption
+          setValue('body', `<p>${text.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>`)
+        }}
+      />
 
       <MediaLibraryModal
         open={mediaOpen}

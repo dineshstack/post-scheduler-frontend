@@ -3,6 +3,8 @@ import Cookies from 'js-cookie'
 import type {
   AnalyticsOverview,
   AnalyticsTimeSeries,
+  BestTimesResponse,
+  BlogMetaResponse,
   AuthResponse,
   CalendarPostsResponse,
   GalleryFolder,
@@ -235,19 +237,6 @@ export const galleryApi = {
   },
 }
 
-// AI
-
-export const aiApi = {
-  generateCaption: async (payload: {
-    topic: string
-    platform: string
-    tone: string
-  }): Promise<{ caption: string; hashtags: string[] }> => {
-    const { data } = await http.post<{ caption: string; hashtags: string[] }>('/ai/caption', payload)
-    return data
-  },
-}
-
 // Analytics
 
 export const analyticsApi = {
@@ -258,6 +247,34 @@ export const analyticsApi = {
 
   timeSeries: async (params?: { from?: string; to?: string }): Promise<AnalyticsTimeSeries> => {
     const { data } = await http.get<AnalyticsTimeSeries>('/analytics/time-series', { params })
+    return data
+  },
+
+  bestTimes: async (): Promise<BestTimesResponse> => {
+    const { data } = await http.get<BestTimesResponse>('/analytics/best-times')
+    return data
+  },
+}
+
+// Blog metadata proxy
+
+export const blogMetaApi = {
+  getMeta: async (): Promise<BlogMetaResponse> => {
+    const { data } = await http.get<BlogMetaResponse>('/blog/meta')
+    return data
+  },
+}
+
+// AI
+
+export const aiApi = {
+  generateCaption: async (payload: {
+    topic: string
+    platform: string
+    tone: string
+    existing_content?: string
+  }): Promise<{ caption: string; hashtags: string[] }> => {
+    const { data } = await http.post<{ caption: string; hashtags: string[] }>('/ai/caption', payload)
     return data
   },
 }

@@ -4,7 +4,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { analyticsApi, authApi, galleryApi, platformAccountsApi, postsApi } from '@/lib/api'
+import { analyticsApi, authApi, blogMetaApi, galleryApi, platformAccountsApi, postsApi } from '@/lib/api'
 import { useAuthStore } from '@/lib/stores/auth.store'
 import type { StorePostPayload } from '@/lib/types'
 
@@ -16,8 +16,9 @@ export const queryKeys = {
   post:             (id: number)      => ['posts', id]     as const,
   calendar:         (from: string, to: string) => ['calendar', from, to] as const,
   platformAccounts: ['platform-accounts']        as const,
-  analyticsOverview:  (from: string, to: string) => ['analytics', 'overview', from, to] as const,
-  analyticsTimeSeries:(from: string, to: string) => ['analytics', 'time-series', from, to] as const,
+  analyticsOverview:   (from: string, to: string) => ['analytics', 'overview', from, to] as const,
+  analyticsTimeSeries: (from: string, to: string) => ['analytics', 'time-series', from, to] as const,
+  analyticsBestTimes:  ['analytics', 'best-times'] as const,
 }
 
 //  Auth hooks 
@@ -235,5 +236,24 @@ export function useAnalyticsTimeSeries(from: string, to: string) {
     queryFn:  () => analyticsApi.timeSeries({ from, to }),
     enabled:  !!(from && to),
     staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function useAnalyticsBestTimes() {
+  return useQuery({
+    queryKey: queryKeys.analyticsBestTimes,
+    queryFn:  analyticsApi.bestTimes,
+    staleTime: 30 * 60 * 1000,
+  })
+}
+
+// Blog metadata hook (categories + tags)
+
+export function useBlogMeta(enabled: boolean) {
+  return useQuery({
+    queryKey: ['blog', 'meta'],
+    queryFn:  blogMetaApi.getMeta,
+    enabled,
+    staleTime: 10 * 60 * 1000,
   })
 }

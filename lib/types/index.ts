@@ -52,10 +52,48 @@ export interface PlatformAccount {
 
 export type PostStatus = 'draft' | 'scheduled' | 'publishing' | 'published' | 'failed'
 
+export interface BlogCaseStudy {
+  client?: string
+  industry?: string
+  challenge?: string
+  solution?: string
+  results?: string
+  technologies?: string[]
+  project_url?: string
+  duration?: string
+}
+
 export interface PerPlatformOverride {
   body?: string
   title?: string
   media_urls?: string[]
+  // Blog-specific metadata (stored in per_platform_overrides.blog)
+  excerpt?: string
+  category_id?: number
+  tags?: string[]
+  meta_title?: string
+  meta_description?: string
+  canonical_url?: string
+  is_featured?: boolean
+  allow_comments?: boolean
+  case_study?: BlogCaseStudy
+}
+
+export interface BlogCategory {
+  id: number
+  name: string
+  slug: string
+  color?: string
+}
+
+export interface BlogTag {
+  name: string
+  slug: string
+}
+
+export interface BlogMetaResponse {
+  categories: BlogCategory[]
+  tags: BlogTag[]
 }
 
 export interface Post {
@@ -74,6 +112,7 @@ export interface Post {
   blog_post_type: 'article' | 'tutorial' | 'case_study' | null
   blog_post_id: number | null
   notes: string | null
+  first_comment: string | null
   created_at: string
   updated_at: string
   platform_logs?: PostPlatformLog[]
@@ -100,8 +139,23 @@ export interface StorePostPayload {
   scheduled_at?: string | null
   status?: 'draft' | 'scheduled'
   notes?: string
+  first_comment?: string
   blog_slug?: string
   blog_post_type?: 'article' | 'tutorial' | 'case_study'
+}
+
+// Best times to post
+
+export interface BestTimeSlot {
+  day: number
+  day_name: string
+  hour: number
+  hour_label: string
+  score: number
+}
+
+export interface BestTimesResponse {
+  best_times: Partial<Record<Platform, BestTimeSlot[]>>
 }
 
 //  Calendar 

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Loader2, Sparkles, Copy, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import { aiApi } from '@/lib/api'
-import { Button, Modal, Select, Textarea } from '@/components/ui'
+import { Button, Modal, Select } from '@/components/ui'
 import type { Platform } from '@/lib/types'
 
 const PLATFORMS = [

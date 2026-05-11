@@ -11,6 +11,7 @@ import AppLayout from '@/components/layout/AppLayout'
 import { Button, Input, Textarea, DateTimePicker } from '@/components/ui'
 import MediaLibraryModal from '@/components/media/MediaLibraryModal'
 import { usePlatformAccounts, usePost, useUpdatePost } from '@/lib/hooks'
+import BlogSettingsPanel from '@/components/blog/BlogSettingsPanel'
 import type { GalleryItem, Platform } from '@/lib/types'
 
 const CKEditorField = dynamic(() => import('@/components/editor/CKEditorField'), {
@@ -43,7 +44,24 @@ const schema = z.object({
   blog_slug:      z.string().optional(),
   blog_post_type: z.enum(['article', 'tutorial', 'case_study']).optional(),
   notes:          z.string().optional(),
-  overrides:      z.record(z.object({ body: z.string().optional() })).optional(),
+  first_comment:  z.string().max(2200).optional(),
+  overrides: z.record(z.object({
+    body:             z.string().optional(),
+    excerpt:          z.string().max(500).optional(),
+    category_id:      z.number().optional(),
+    tags:             z.array(z.string()).optional(),
+    meta_title:       z.string().max(70).optional(),
+    meta_description: z.string().max(160).optional(),
+    canonical_url:    z.string().optional(),
+    is_featured:      z.boolean().optional(),
+    allow_comments:   z.boolean().optional(),
+    case_study: z.object({
+      client: z.string().optional(), industry: z.string().optional(),
+      challenge: z.string().optional(), solution: z.string().optional(),
+      results: z.string().optional(), technologies: z.array(z.string()).optional(),
+      project_url: z.string().optional(), duration: z.string().optional(),
+    }).optional(),
+  })).optional(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -183,6 +201,7 @@ export default function EditPostPage() {
       blog_slug:      post.blog_slug ?? '',
       blog_post_type: post.blog_post_type ?? 'article',
       notes:          post.notes ?? '',
+      first_comment:  post.first_comment ?? '',
       overrides,
     })
     if (post.scheduled_at) setScheduleMode('schedule')
@@ -219,6 +238,7 @@ export default function EditPostPage() {
         blog_slug:              hasBlog ? values.blog_slug : undefined,
         blog_post_type:         hasBlog ? (values.blog_post_type ?? 'article') : undefined,
         notes:                  values.notes,
+        first_comment:          values.first_comment || undefined,
       },
       { onSuccess: () => router.push('/dashboard/posts') }
     )
@@ -401,8 +421,9 @@ export default function EditPostPage() {
 
           {/* Blog settings */}
           {hasBlog && (
-            <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-card)] p-4 space-y-3">
+            <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-card)] p-4 space-y-4">
               <h3 className="font-semibold text-sm text-[var(--text-base)]">Blog settings</h3>
+
               <div>
                 <label className={labelCls}>Post type *</label>
                 <select
@@ -414,11 +435,18 @@ export default function EditPostPage() {
                   <option value="case_study">Case Study</option>
                 </select>
               </div>
+
               <Input
                 label="Slug (optional)"
                 placeholder="my-awesome-post"
-                hint="Customize the URL slug"
+                hint="Leave blank to keep existing slug"
                 {...register('blog_slug')}
+              />
+
+              <BlogSettingsPanel
+                value={watchedOverrides['blog'] ?? {}}
+                onChange={(v) => setValue('overrides.blog', v, { shouldDirty: true })}
+                postType={watch('blog_post_type') as 'article' | 'tutorial' | 'case_study' | undefined}
               />
             </div>
           )}
@@ -430,6 +458,17 @@ export default function EditPostPage() {
               placeholder="Internal notes  not published"
               rows={3}
               {...register('notes')}
+            />
+          </div>
+
+          {/* First comment */}
+          <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-card)] p-4">
+            <Textarea
+              label="First comment"
+              placeholder="Auto-posted as a comment seconds after publishing (e.g. hashtags, CTA)"
+              rows={3}
+              charLimit={2200}
+              {...register('first_comment')}
             />
           </div>
         </div>
