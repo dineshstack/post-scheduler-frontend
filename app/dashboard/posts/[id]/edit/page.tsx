@@ -187,10 +187,10 @@ export default function EditPostPage() {
 
   useEffect(() => {
     if (!post) return
-    const overrides: Record<string, { body?: string }> = {}
+    const overrides: Record<string, object> = {}
     if (post.per_platform_overrides) {
       Object.entries(post.per_platform_overrides).forEach(([p, v]) => {
-        overrides[p] = { body: v.body ?? '' }
+        overrides[p] = v
       })
     }
     reset({
@@ -221,9 +221,13 @@ export default function EditPostPage() {
   const readTime  = Math.max(1, Math.ceil(wordCount / 200))
 
   const onSubmit = (values: FormValues, action: 'draft' | 'schedule') => {
-    const perOverrides: Record<string, { body?: string }> = {}
+    const perOverrides: Record<string, object> = {}
     Object.entries(values.overrides ?? {}).forEach(([p, v]) => {
-      if (v.body?.trim()) perOverrides[p] = { body: v.body }
+      if (p === 'blog') {
+        perOverrides[p] = v
+      } else if (v.body?.trim()) {
+        perOverrides[p] = { body: v.body }
+      }
     })
 
     updatePost(
@@ -292,12 +296,12 @@ export default function EditPostPage() {
             {errors.body && <p className="text-xs text-red-500 mt-1">{errors.body.message}</p>}
           </div>
 
-          {/* Per-platform overrides */}
-          {watchedPlatforms.length > 0 && (
+          {/* Per-platform overrides (blog uses its own settings panel in the sidebar) */}
+          {watchedPlatforms.filter((p) => p !== 'blog').length > 0 && (
             <OverridesAccordion
-              platforms={watchedPlatforms}
+              platforms={watchedPlatforms.filter((p) => p !== 'blog')}
               values={watchedOverrides}
-              onChange={(p, body) => setValue(`overrides.${p}`, { body }, { shouldDirty: true })}
+              onChange={(p, body) => setValue(`overrides.${p}`, { ...watchedOverrides[p], body }, { shouldDirty: true })}
             />
           )}
         </div>

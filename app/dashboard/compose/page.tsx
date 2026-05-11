@@ -197,9 +197,13 @@ export default function ComposePage() {
   const readTime  = Math.max(1, Math.ceil(wordCount / 200))
 
   const submit = (values: FormValues, action: 'draft' | 'schedule' | 'publish') => {
-    const perOverrides: Record<string, { body?: string }> = {}
+    const perOverrides: Record<string, object> = {}
     Object.entries(values.overrides ?? {}).forEach(([p, v]) => {
-      if (v.body?.trim()) perOverrides[p] = { body: v.body }
+      if (p === 'blog') {
+        perOverrides[p] = v
+      } else if (v.body?.trim()) {
+        perOverrides[p] = { body: v.body }
+      }
     })
 
     createPost(
@@ -267,12 +271,12 @@ export default function ComposePage() {
             {errors.body && <p className="text-xs text-red-500 mt-1">{errors.body.message}</p>}
           </div>
 
-          {/* Per-platform overrides */}
-          {watchedPlatforms.length > 0 && (
+          {/* Per-platform overrides (blog uses its own settings panel in the sidebar) */}
+          {watchedPlatforms.filter((p) => p !== 'blog').length > 0 && (
             <OverridesAccordion
-              platforms={watchedPlatforms}
+              platforms={watchedPlatforms.filter((p) => p !== 'blog')}
               values={watchedOverrides}
-              onChange={(p, body) => setValue(`overrides.${p}`, { body }, { shouldDirty: true })}
+              onChange={(p, body) => setValue(`overrides.${p}`, { ...watchedOverrides[p], body }, { shouldDirty: true })}
             />
           )}
         </div>
@@ -312,10 +316,10 @@ export default function ComposePage() {
                   )}
                 />
                 {/* Best-time hints */}
-                {watchedPlatforms.length > 0 && bestTimes && (
+                {watchedPlatforms.length > 0 && bestTimes?.best_times && (
                   <div className="space-y-1.5">
                     {watchedPlatforms.map((p) => {
-                      const top = bestTimes.best_times[p]?.[0]
+                      const top = bestTimes.best_times![p]?.[0]
                       if (!top) return null
                       return (
                         <div key={p} className="flex items-center gap-1.5 text-[11px] text-[var(--text-faint)]">
