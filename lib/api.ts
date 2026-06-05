@@ -172,10 +172,10 @@ export const platformAccountsApi = {
     return `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/${platform}/redirect`
   },
 
-  connectBlog: async (blogToken: string, accountName: string): Promise<PlatformAccount> => {
+  connectBlog: async (email: string, password: string): Promise<PlatformAccount> => {
     const { data } = await http.post<{ account: PlatformAccount }>('/auth/blog/connect', {
-      blog_token: blogToken,
-      account_name: accountName,
+      email,
+      password,
     })
     return data.account
   },
