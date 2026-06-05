@@ -121,7 +121,7 @@ export default function PostsQueuePage() {
                       <RefreshCw className="h-3.5 w-3.5" /> Publish now
                     </Button>
                   )}
-                  {(post.status === 'draft' || post.status === 'scheduled') && (
+                  {(post.status === 'draft' || post.status === 'scheduled' || post.status === 'published') && (
                     <Link href={`/dashboard/posts/${post.id}/edit`}>
                       <Button variant="ghost" size="icon" title="Edit">
                         <Edit2 className="h-3.5 w-3.5" />

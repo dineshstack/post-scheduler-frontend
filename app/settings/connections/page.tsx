@@ -110,24 +110,11 @@ function BlogConnectModal({ open, onClose }: { open: boolean; onClose: () => voi
     if (!email || !password) return
     setLoading(true)
     try {
-      // Step 1  log in to DineshStack blog and get a token
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BLOG_API_URL ?? 'http://localhost:8001'}/api/v1/auth/login`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({ email, password }),
-        }
-      )
-      if (!res.ok) throw new Error('Invalid blog credentials')
-      const { token, user } = await res.json()
-
-      // Step 2  store token in post-scheduler backend
-      await platformAccountsApi.connectBlog(token, user.name || email)
+      await platformAccountsApi.connectBlog(email, password)
       toast.success('Blog connected successfully.')
       onClose()
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to connect blog.')
+      toast.error(err instanceof Error ? err.message : 'Invalid blog credentials.')
     } finally {
       setLoading(false)
     }

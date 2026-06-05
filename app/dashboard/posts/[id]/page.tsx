@@ -78,7 +78,7 @@ export default function PostDetailPage({ params }: { params: Promise<{ id: strin
               Retry
             </Button>
           )}
-          {(post.status === 'draft' || post.status === 'scheduled') && (
+          {(post.status === 'draft' || post.status === 'scheduled' || post.status === 'published') && (
             <Link href={`/dashboard/posts/${post.id}/edit`}>
               <Button size="sm" variant="outline">
                 <Edit2 className="h-3.5 w-3.5" /> Edit
@@ -121,6 +121,24 @@ export default function PostDetailPage({ params }: { params: Promise<{ id: strin
                   <span>
                     Published {formatDistanceToNow(new Date(post.published_at), { addSuffix: true })}
                   </span>
+                </div>
+              )}
+              {post.sentiment && (
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                  post.sentiment === 'positive' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                  : post.sentiment === 'negative' ? 'bg-red-500/10 text-red-600 dark:text-red-400'
+                  : 'bg-[var(--surface-subtle)] text-[var(--text-muted)]'
+                }`}>
+                  {post.sentiment === 'positive' ? '😊' : post.sentiment === 'negative' ? '😟' : '😐'} {post.sentiment}
+                </span>
+              )}
+              {post.topics && post.topics.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {post.topics.map((t) => (
+                    <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--accent-subtle)] text-[var(--accent-text)]">
+                      {t}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>
