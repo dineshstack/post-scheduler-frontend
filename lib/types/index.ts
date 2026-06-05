@@ -113,6 +113,7 @@ export interface Post {
   blog_post_id: number | null
   notes: string | null
   first_comment: string | null
+  sentiment: 'positive' | 'negative' | 'neutral' | null
   created_at: string
   updated_at: string
   platform_logs?: PostPlatformLog[]
