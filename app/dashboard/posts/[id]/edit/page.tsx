@@ -43,6 +43,7 @@ const schema = z.object({
   scheduled_at:   z.string().nullable().optional(),
   blog_slug:      z.string().optional(),
   blog_post_type: z.enum(['article', 'tutorial', 'case_study']).optional(),
+  blog_locale:    z.enum(['en', 'si', 'ar']).optional(),
   notes:          z.string().optional(),
   first_comment:  z.string().max(2200).optional(),
   overrides: z.record(z.object({
@@ -182,7 +183,7 @@ export default function EditPostPage() {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { title: '', body: '', platforms: [], blog_post_type: 'article', overrides: {} },
+    defaultValues: { title: '', body: '', platforms: [], blog_post_type: 'article', blog_locale: 'en', overrides: {} },
   })
 
   useEffect(() => {
@@ -200,6 +201,7 @@ export default function EditPostPage() {
       scheduled_at:   post.scheduled_at ?? null,
       blog_slug:      post.blog_slug ?? '',
       blog_post_type: post.blog_post_type ?? 'article',
+      blog_locale:    post.blog_locale ?? 'en',
       notes:          post.notes ?? '',
       first_comment:  post.first_comment ?? '',
       overrides,
@@ -241,6 +243,7 @@ export default function EditPostPage() {
         status:                 action === 'draft' ? 'draft' : 'scheduled',
         blog_slug:              hasBlog ? values.blog_slug : undefined,
         blog_post_type:         hasBlog ? (values.blog_post_type ?? 'article') : undefined,
+        blog_locale:            hasBlog ? (values.blog_locale ?? 'en') : undefined,
         notes:                  values.notes,
         first_comment:          values.first_comment || undefined,
       },
@@ -437,6 +440,18 @@ export default function EditPostPage() {
                   <option value="article">Article</option>
                   <option value="tutorial">Tutorial</option>
                   <option value="case_study">Case Study</option>
+                </select>
+              </div>
+
+              <div>
+                <label className={labelCls}>Language</label>
+                <select
+                  {...register('blog_locale')}
+                  className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface-subtle)] px-4 py-2.5 text-sm text-[var(--text-base)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] transition-colors"
+                >
+                  <option value="en">🇬🇧 English</option>
+                  <option value="si">🇱🇰 Sinhala</option>
+                  <option value="ar">🇦🇪 Arabic</option>
                 </select>
               </div>
 

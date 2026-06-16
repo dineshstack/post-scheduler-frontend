@@ -110,6 +110,7 @@ export interface Post {
   status: PostStatus
   blog_slug: string | null
   blog_post_type: 'article' | 'tutorial' | 'case_study' | null
+  blog_locale: 'en' | 'si' | 'ar' | null
   blog_post_id: number | null
   notes: string | null
   first_comment: string | null
@@ -144,6 +145,7 @@ export interface StorePostPayload {
   first_comment?: string
   blog_slug?: string
   blog_post_type?: 'article' | 'tutorial' | 'case_study'
+  blog_locale?: 'en' | 'si' | 'ar'
 }
 
 // Best times to post
