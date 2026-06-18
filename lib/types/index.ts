@@ -34,7 +34,7 @@ export interface RegisterPayload {
 
 //  Platform Accounts 
 
-export type Platform = 'twitter' | 'instagram' | 'linkedin' | 'facebook' | 'tiktok' | 'blog'
+export type Platform = 'twitter' | 'instagram' | 'linkedin' | 'facebook' | 'tiktok' | 'blog' | 'devto' | 'medium'
 
 export interface PlatformAccount {
   id: number
@@ -67,16 +67,26 @@ export interface PerPlatformOverride {
   body?: string
   title?: string
   media_urls?: string[]
+  // Shared across multiple platform panels
+  tags?: string[]
+  canonical_url?: string
   // Blog-specific metadata (stored in per_platform_overrides.blog)
   excerpt?: string
   category_id?: number
-  tags?: string[]
   meta_title?: string
   meta_description?: string
-  canonical_url?: string
   is_featured?: boolean
   allow_comments?: boolean
   case_study?: BlogCaseStudy
+  // Dev.to-specific (max 4 tags, no hyphens)
+  series?: string
+  description?: string  // shown in dev.to feed cards
+  main_image?: string   // cover image URL
+  published?: boolean   // false = save as draft on dev.to
+  // Medium-specific (max 3 tags, posts are immutable after publish)
+  publish_status?: 'public' | 'draft' | 'unlisted'
+  notify_followers?: boolean
+  publication_id?: string
 }
 
 export interface BlogCategory {

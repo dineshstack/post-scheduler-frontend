@@ -12,6 +12,8 @@ import { Button, Input, Textarea, DateTimePicker } from '@/components/ui'
 import MediaLibraryModal from '@/components/media/MediaLibraryModal'
 import { usePlatformAccounts, usePost, useUpdatePost } from '@/lib/hooks'
 import BlogSettingsPanel from '@/components/blog/BlogSettingsPanel'
+import DevToSettingsPanel from '@/components/devto/DevToSettingsPanel'
+import MediumSettingsPanel from '@/components/medium/MediumSettingsPanel'
 import type { GalleryItem, Platform } from '@/lib/types'
 
 const CKEditorField = dynamic(() => import('@/components/editor/CKEditorField'), {
@@ -23,15 +25,20 @@ const CKEditorField = dynamic(() => import('@/components/editor/CKEditorField'),
   ),
 })
 
-//  Constants 
+//  Constants
+
+// Platforms with dedicated settings panels — excluded from the generic overrides accordion
+const PANEL_PLATFORMS = new Set<Platform>(['blog', 'devto', 'medium'])
 
 const PLATFORM_META: Record<Platform, { label: string; icon: string; charLimit: number }> = {
-  twitter:   { label: 'Twitter / X',  icon: '',  charLimit: 280 },
+  twitter:   { label: 'Twitter / X',  icon: '𝕏',  charLimit: 280 },
   linkedin:  { label: 'LinkedIn',      icon: '💼', charLimit: 3000 },
   instagram: { label: 'Instagram',     icon: '📸', charLimit: 2200 },
   facebook:  { label: 'Facebook',      icon: '📘', charLimit: 63206 },
   tiktok:    { label: 'TikTok',        icon: '🎵', charLimit: 2200 },
   blog:      { label: 'Blog',          icon: '📝', charLimit: 0 },
+  devto:     { label: 'Dev.to',        icon: '👩‍💻', charLimit: 0 },
+  medium:    { label: 'Medium',        icon: '✍️',  charLimit: 0 },
 }
 
 const labelCls = 'block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-1.5'
@@ -62,12 +69,21 @@ const schema = z.object({
       results: z.string().optional(), technologies: z.array(z.string()).optional(),
       project_url: z.string().optional(), duration: z.string().optional(),
     }).optional(),
+    // Dev.to-specific (max 4 tags, no hyphens)
+    series:           z.string().optional(),
+    description:      z.string().max(500).optional(),
+    main_image:       z.string().optional(),
+    published:        z.boolean().optional(),
+    // Medium-specific (max 3 tags, posts are immutable after publish)
+    publish_status:   z.enum(['public', 'draft', 'unlisted']).optional(),
+    notify_followers: z.boolean().optional(),
+    publication_id:   z.string().optional(),
   })).optional(),
 })
 
 type FormValues = z.infer<typeof schema>
 
-//  Platform selector 
+//  Platform selector
 
 function PlatformSelector({
   connected, selected, onChange,
@@ -105,7 +121,7 @@ function PlatformSelector({
   )
 }
 
-//  Overrides accordion 
+//  Per-platform overrides accordion (generic platforms only)
 
 function OverridesAccordion({
   platforms, values, onChange,
@@ -158,7 +174,7 @@ function OverridesAccordion({
   )
 }
 
-//  Page 
+//  Page
 
 export default function EditPostPage() {
   const params = useParams<{ id: string }>()
@@ -217,6 +233,8 @@ export default function EditPostPage() {
   const watchedPlatforms = watch('platforms') as Platform[]
   const watchedOverrides = watch('overrides') ?? {}
   const hasBlog          = watchedPlatforms.includes('blog')
+  const hasDevTo         = watchedPlatforms.includes('devto')
+  const hasMedium        = watchedPlatforms.includes('medium')
 
   const bodyHtml  = watch('body') as string
   const wordCount = bodyHtml.replace(/<[^>]+>/g, '').split(/\s+/).filter(Boolean).length
@@ -225,8 +243,8 @@ export default function EditPostPage() {
   const onSubmit = (values: FormValues, action: 'draft' | 'schedule') => {
     const perOverrides: Record<string, object> = {}
     Object.entries(values.overrides ?? {}).forEach(([p, v]) => {
-      if (p === 'blog') {
-        perOverrides[p] = v
+      if (PANEL_PLATFORMS.has(p as Platform)) {
+        perOverrides[p] = v  // pass full settings for platforms with dedicated panels
       } else if (v.body?.trim()) {
         perOverrides[p] = { body: v.body }
       }
@@ -299,10 +317,10 @@ export default function EditPostPage() {
             {errors.body && <p className="text-xs text-red-500 mt-1">{errors.body.message}</p>}
           </div>
 
-          {/* Per-platform overrides (blog uses its own settings panel in the sidebar) */}
-          {watchedPlatforms.filter((p) => p !== 'blog').length > 0 && (
+          {/* Generic per-platform overrides (excludes platforms with dedicated panels) */}
+          {watchedPlatforms.filter((p) => !PANEL_PLATFORMS.has(p)).length > 0 && (
             <OverridesAccordion
-              platforms={watchedPlatforms.filter((p) => p !== 'blog')}
+              platforms={watchedPlatforms.filter((p) => !PANEL_PLATFORMS.has(p))}
               values={watchedOverrides}
               onChange={(p, body) => setValue(`overrides.${p}`, { ...watchedOverrides[p], body }, { shouldDirty: true })}
             />
@@ -466,6 +484,28 @@ export default function EditPostPage() {
                 value={watchedOverrides['blog'] ?? {}}
                 onChange={(v) => setValue('overrides.blog', v, { shouldDirty: true })}
                 postType={watch('blog_post_type') as 'article' | 'tutorial' | 'case_study' | undefined}
+              />
+            </div>
+          )}
+
+          {/* Dev.to settings */}
+          {hasDevTo && (
+            <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-card)] p-4 space-y-4">
+              <h3 className="font-semibold text-sm text-[var(--text-base)]">Dev.to settings</h3>
+              <DevToSettingsPanel
+                value={watchedOverrides['devto'] ?? {}}
+                onChange={(v) => setValue('overrides.devto', v, { shouldDirty: true })}
+              />
+            </div>
+          )}
+
+          {/* Medium settings */}
+          {hasMedium && (
+            <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-card)] p-4 space-y-4">
+              <h3 className="font-semibold text-sm text-[var(--text-base)]">Medium settings</h3>
+              <MediumSettingsPanel
+                value={watchedOverrides['medium'] ?? {}}
+                onChange={(v) => setValue('overrides.medium', v, { shouldDirty: true })}
               />
             </div>
           )}
