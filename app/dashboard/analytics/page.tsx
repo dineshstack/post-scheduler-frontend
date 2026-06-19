@@ -8,12 +8,12 @@ import {
 } from 'recharts'
 import { useTheme } from 'next-themes'
 import {
-  AlertCircle, BarChart2, CheckCircle2,
-  ExternalLink, TrendingUp, Zap,
+  AlertCircle, ArrowDown, ArrowUp, BarChart2, CheckCircle2,
+  ExternalLink, Lightbulb, Minus, TrendingUp, Zap,
 } from 'lucide-react'
 import AppLayout from '@/components/layout/AppLayout'
 import { Card, CardContent, CardHeader, CardTitle, PlatformChips, StatusBadge } from '@/components/ui'
-import { useAnalyticsBestTimes, useAnalyticsOverview, useAnalyticsTimeSeries } from '@/lib/hooks'
+import { useAnalyticsBestTimes, useAnalyticsInsights, useAnalyticsOverview, useAnalyticsTimeSeries } from '@/lib/hooks'
 import type { Platform } from '@/lib/types'
 
 // Date range presets
@@ -91,6 +91,7 @@ export default function AnalyticsPage() {
   const { data: overview,   isLoading: loadingOverview } = useAnalyticsOverview(from, to)
   const { data: ts,         isLoading: loadingTs }       = useAnalyticsTimeSeries(from, to)
   const { data: bestTimes }                              = useAnalyticsBestTimes()
+  const { data: insights }                               = useAnalyticsInsights()
 
   const isDark    = resolvedTheme === 'dark'
   const gridColor = isDark ? '#2a3547' : '#dde3ed'
@@ -147,6 +148,58 @@ export default function AnalyticsPage() {
         </div>
       ) : (
         <div className="space-y-6">
+
+          {/* Monthly insights */}
+          {insights && (
+            <Card>
+              <CardContent className="pt-5 pb-4">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="h-8 w-8 rounded-xl bg-[var(--accent-subtle)] flex items-center justify-center shrink-0">
+                    <Lightbulb className="h-4 w-4 text-[var(--accent-text)]" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-0.5">Monthly Insights</p>
+                    <p className="text-sm text-[var(--text-base)]">{insights.summary}</p>
+                  </div>
+                </div>
+
+                {insights.highlights.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                    {insights.highlights.map((h, i) => (
+                      <div key={i} className="rounded-xl border border-[var(--line)] bg-[var(--surface-subtle)] px-3 py-2.5">
+                        <p className="text-[10px] text-[var(--text-faint)] uppercase tracking-wide mb-0.5">{h.title}</p>
+                        <p className="text-base font-bold text-[var(--text-base)]">{h.value}</p>
+                        {h.change != null && (
+                          <p className={`text-[11px] flex items-center gap-0.5 mt-0.5 ${
+                            h.trend === 'up'   ? 'text-emerald-500'
+                            : h.trend === 'down' ? 'text-red-500'
+                            : 'text-[var(--text-faint)]'
+                          }`}>
+                            {h.trend === 'up'   ? <ArrowUp   className="h-3 w-3" />
+                            : h.trend === 'down' ? <ArrowDown className="h-3 w-3" />
+                            : <Minus className="h-3 w-3" />}
+                            {Math.abs(h.change)}% vs last month
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {insights.recommendations.length > 0 && (
+                  <div className="rounded-xl border border-[var(--accent)]/20 bg-[var(--accent-subtle)] px-4 py-3 space-y-1.5">
+                    <p className="text-[10px] font-semibold text-[var(--accent-text)] uppercase tracking-wide mb-2">Recommendations</p>
+                    {insights.recommendations.map((r, i) => (
+                      <p key={i} className="text-xs text-[var(--text-muted)] flex gap-2">
+                        <span className="text-[var(--accent-text)] font-bold shrink-0">{i + 1}.</span>
+                        {r}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Stats cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

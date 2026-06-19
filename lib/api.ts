@@ -1,6 +1,7 @@
 import axios, { AxiosError, type AxiosInstance } from 'axios'
 import Cookies from 'js-cookie'
 import type {
+  AnalyticsInsights,
   AnalyticsOverview,
   AnalyticsTimeSeries,
   BestTimesResponse,
@@ -14,7 +15,11 @@ import type {
   Paginated,
   PlatformAccount,
   Post,
+  PostIdea,
   RegisterPayload,
+  SeoFormula,
+  SeoTitlesResponse,
+  StorePostIdeaPayload,
   StorePostPayload,
   TrashContents,
   User,
@@ -275,6 +280,74 @@ export const aiApi = {
     existing_content?: string
   }): Promise<{ caption: string; hashtags: string[] }> => {
     const { data } = await http.post<{ caption: string; hashtags: string[] }>('/ai/caption', payload)
+    return data
+  },
+
+  generateSeoTitles: async (payload: {
+    keyword: string
+    content_type?: string
+    framework?: string
+    formula?: string
+  }): Promise<SeoTitlesResponse> => {
+    const { data } = await http.post<SeoTitlesResponse>('/ai/seo-titles', payload)
+    return data
+  },
+}
+
+// Post Ideas
+
+export const postIdeasApi = {
+  list: async (params?: {
+    status?: string
+    priority?: string
+    content_type?: string
+    active_only?: boolean
+    page?: number
+    per_page?: number
+  }): Promise<Paginated<PostIdea>> => {
+    const { data } = await http.get<Paginated<PostIdea>>('/post-ideas', { params })
+    return data
+  },
+
+  get: async (id: number): Promise<PostIdea> => {
+    const { data } = await http.get<PostIdea>(`/post-ideas/${id}`)
+    return data
+  },
+
+  create: async (payload: StorePostIdeaPayload): Promise<PostIdea> => {
+    const { data } = await http.post<{ idea: PostIdea }>('/post-ideas', payload)
+    return data.idea
+  },
+
+  update: async (id: number, payload: Partial<StorePostIdeaPayload> & { status?: string }): Promise<PostIdea> => {
+    const { data } = await http.put<{ idea: PostIdea }>(`/post-ideas/${id}`, payload)
+    return data.idea
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await http.delete(`/post-ideas/${id}`)
+  },
+
+  convert: async (id: number): Promise<{ post: Post; idea: PostIdea }> => {
+    const { data } = await http.post<{ post: Post; idea: PostIdea }>(`/post-ideas/${id}/convert`)
+    return data
+  },
+}
+
+// SEO
+
+export const seoApi = {
+  formulas: async (): Promise<{ formulas: SeoFormula[] }> => {
+    const { data } = await http.get<{ formulas: SeoFormula[] }>('/seo/formulas')
+    return data
+  },
+}
+
+// Analytics (extended)
+
+export const analyticsInsightsApi = {
+  insights: async (): Promise<AnalyticsInsights> => {
+    const { data } = await http.get<AnalyticsInsights>('/analytics/insights')
     return data
   },
 }

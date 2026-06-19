@@ -303,3 +303,78 @@ export interface AnalyticsTimeSeriesPoint {
 export interface AnalyticsTimeSeries {
   series: AnalyticsTimeSeriesPoint[]
 }
+
+export interface AnalyticsInsightHighlight {
+  type: string
+  title: string
+  value: string
+  change: number | null
+  trend: 'up' | 'down' | 'flat'
+}
+
+export interface AnalyticsInsights {
+  summary: string
+  highlights: AnalyticsInsightHighlight[]
+  recommendations: string[]
+}
+
+// Post Ideas
+
+export type PostIdeaStatus      = 'idea' | 'in_progress' | 'converted' | 'rejected'
+export type PostIdeaContentType = 'tutorial' | 'tips' | 'comparison' | 'mistakes' | 'guide' | 'release' | 'project' | 'benchmark'
+export type PostIdeaSeoFormula  = 'step_by_step' | 'bad_practices' | 'all_you_need' | 'vs_comparison' | 'n_ways' | 'release_update' | 'beginners_guide' | 'benchmark' | 'first_impression' | 'top_mistakes'
+
+export interface PostIdea {
+  id: number
+  user_id: number
+  title: string
+  keyword_target: string | null
+  notes: string | null
+  target_publish_date: string | null
+  content_type: PostIdeaContentType
+  seo_formula: PostIdeaSeoFormula | null
+  priority: 'low' | 'medium' | 'high'
+  status: PostIdeaStatus
+  tags: string[] | null
+  converted_post_id: number | null
+  converted_post?: { id: number; title: string; status: string } | null
+  created_at: string
+  updated_at: string
+}
+
+export interface StorePostIdeaPayload {
+  title: string
+  keyword_target?: string
+  notes?: string
+  target_publish_date?: string | null
+  content_type?: PostIdeaContentType
+  seo_formula?: PostIdeaSeoFormula | null
+  priority?: 'low' | 'medium' | 'high'
+  tags?: string[]
+}
+
+// SEO
+
+export interface SeoFormula {
+  key: string
+  label: string
+  pattern: string
+  example: string
+  best_for: string[]
+  search_intent: string
+  difficulty: string
+  tip?: string
+}
+
+export interface SeoTitle {
+  title: string
+  formula: string
+  estimated_length: number
+  search_intent: string
+}
+
+export interface SeoTitlesResponse {
+  titles: SeoTitle[]
+  primary_keyword: string
+  suggested_slug: string
+}

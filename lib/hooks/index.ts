@@ -4,9 +4,9 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { analyticsApi, authApi, blogMetaApi, galleryApi, platformAccountsApi, postsApi } from '@/lib/api'
+import { analyticsApi, analyticsInsightsApi, authApi, blogMetaApi, galleryApi, platformAccountsApi, postIdeasApi, postsApi } from '@/lib/api'
 import { useAuthStore } from '@/lib/stores/auth.store'
-import type { StorePostPayload } from '@/lib/types'
+import type { StorePostIdeaPayload, StorePostPayload } from '@/lib/types'
 
 //  Query keys 
 
@@ -19,6 +19,9 @@ export const queryKeys = {
   analyticsOverview:   (from: string, to: string) => ['analytics', 'overview', from, to] as const,
   analyticsTimeSeries: (from: string, to: string) => ['analytics', 'time-series', from, to] as const,
   analyticsBestTimes:  ['analytics', 'best-times'] as const,
+  analyticsInsights:   ['analytics', 'insights']  as const,
+  postIdeas:  (params?: object) => ['post-ideas', params] as const,
+  postIdea:   (id: number)      => ['post-ideas', id]     as const,
 }
 
 //  Auth hooks 
@@ -255,5 +258,84 @@ export function useBlogMeta(enabled: boolean) {
     queryFn:  blogMetaApi.getMeta,
     enabled,
     staleTime: 10 * 60 * 1000,
+  })
+}
+
+// Analytics insights
+
+export function useAnalyticsInsights() {
+  return useQuery({
+    queryKey: queryKeys.analyticsInsights,
+    queryFn:  analyticsInsightsApi.insights,
+    staleTime: 10 * 60 * 1000,
+  })
+}
+
+// Post Ideas hooks
+
+export function usePostIdeas(params?: Parameters<typeof postIdeasApi.list>[0]) {
+  return useQuery({
+    queryKey: queryKeys.postIdeas(params),
+    queryFn:  () => postIdeasApi.list(params),
+    staleTime: 30 * 1000,
+  })
+}
+
+export function usePostIdea(id: number) {
+  return useQuery({
+    queryKey: queryKeys.postIdea(id),
+    queryFn:  () => postIdeasApi.get(id),
+    enabled:  !!id,
+  })
+}
+
+export function useCreatePostIdea() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: StorePostIdeaPayload) => postIdeasApi.create(payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['post-ideas'] })
+      toast.success('Idea saved.')
+    },
+    onError: () => toast.error('Failed to save idea.'),
+  })
+}
+
+export function useUpdatePostIdea(id: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: Partial<StorePostIdeaPayload> & { status?: string }) =>
+      postIdeasApi.update(id, payload),
+    onSuccess: (idea) => {
+      qc.invalidateQueries({ queryKey: ['post-ideas'] })
+      qc.setQueryData(queryKeys.postIdea(id), idea)
+      toast.success('Idea updated.')
+    },
+    onError: () => toast.error('Failed to update idea.'),
+  })
+}
+
+export function useDeletePostIdea() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => postIdeasApi.delete(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['post-ideas'] })
+      toast.success('Idea deleted.')
+    },
+    onError: () => toast.error('Failed to delete idea.'),
+  })
+}
+
+export function useConvertPostIdea() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => postIdeasApi.convert(id),
+    onSuccess: ({ post }) => {
+      qc.invalidateQueries({ queryKey: ['post-ideas'] })
+      qc.invalidateQueries({ queryKey: ['posts'] })
+      toast.success(`Draft post created: "${post.title}"`)
+    },
+    onError: () => toast.error('Failed to convert idea to post.'),
   })
 }

@@ -11,6 +11,7 @@ import AppLayout from '@/components/layout/AppLayout'
 import { Button, Input, Textarea, DateTimePicker } from '@/components/ui'
 import MediaLibraryModal from '@/components/media/MediaLibraryModal'
 import CaptionGenerator from '@/components/ai/CaptionGenerator'
+import SeoTitleGenerator from '@/components/ai/SeoTitleGenerator'
 import BlogSettingsPanel from '@/components/blog/BlogSettingsPanel'
 import DevToSettingsPanel from '@/components/devto/DevToSettingsPanel'
 import MediumSettingsPanel from '@/components/medium/MediumSettingsPanel'
@@ -191,7 +192,8 @@ export default function ComposePage() {
   const [mediaItems, setMediaItems]     = useState<GalleryItem[]>([])
   const [scheduleMode, setScheduleMode] = useState<'now' | 'schedule'>('now')
   const [coverPreview, setCoverPreview] = useState('')
-  const [aiOpen, setAiOpen]             = useState(false)
+  const [aiOpen,       setAiOpen]       = useState(false)
+  const [seoTitleOpen, setSeoTitleOpen] = useState(false)
 
   const connectedPlatforms = (accounts ?? [])
     .filter((a) => a.is_active)
@@ -255,11 +257,20 @@ export default function ComposePage() {
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className={labelCls}>Title *</label>
-              {wordCount > 0 && (
-                <span className="text-xs text-[var(--text-faint)]">
-                  {wordCount.toLocaleString()} words · ~{readTime}m read
-                </span>
-              )}
+              <div className="flex items-center gap-3">
+                {wordCount > 0 && (
+                  <span className="text-xs text-[var(--text-faint)]">
+                    {wordCount.toLocaleString()} words · ~{readTime}m read
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setSeoTitleOpen(true)}
+                  className="flex items-center gap-1.5 text-xs font-medium text-[var(--accent)] hover:text-[var(--accent-text)] transition-colors"
+                >
+                  <Sparkles className="h-3.5 w-3.5" /> SEO title
+                </button>
+              </div>
             </div>
             <input
               {...register('title')}
@@ -545,6 +556,17 @@ export default function ComposePage() {
         onInsert={(caption, hashtags) => {
           const text = hashtags.length ? `${caption}\n\n${hashtags.join(' ')}` : caption
           setValue('body', `<p>${text.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>`)
+        }}
+      />
+
+      <SeoTitleGenerator
+        open={seoTitleOpen}
+        onClose={() => setSeoTitleOpen(false)}
+        onInsert={(title, slug) => {
+          setValue('title', title, { shouldDirty: true })
+          if (slug && !watch('blog_slug')) {
+            setValue('blog_slug', slug, { shouldDirty: true })
+          }
         }}
       />
 

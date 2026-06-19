@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  BarChart2, CalendarDays, LayoutDashboard, Link2, ListTodo,
+  BarChart2, CalendarDays, LayoutDashboard, Lightbulb, Link2, ListTodo,
   LogOut, Moon, Plus, Sun, User
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
@@ -60,9 +60,10 @@ export default function Sidebar() {
 
       {/* Main nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
-        <NavItem href="/dashboard" label="Dashboard" icon={LayoutDashboard} exact />
-        <NavItem href="/dashboard/compose" label="Compose" icon={Plus} exact />
-        <NavItem href="/dashboard/posts"   label="Queue"   icon={ListTodo} />
+        <NavItem href="/dashboard"            label="Dashboard" icon={LayoutDashboard} exact />
+        <NavItem href="/dashboard/compose"    label="Compose"   icon={Plus} exact />
+        <NavItem href="/dashboard/posts"      label="Queue"     icon={ListTodo} />
+        <NavItem href="/dashboard/ideas"      label="Ideas"     icon={Lightbulb} />
         <NavItem href="/dashboard/calendar"   label="Calendar"  icon={CalendarDays} />
         <NavItem href="/dashboard/analytics"  label="Analytics" icon={BarChart2} />
 
