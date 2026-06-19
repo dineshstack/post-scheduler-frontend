@@ -378,3 +378,41 @@ export interface SeoTitlesResponse {
   primary_keyword: string
   suggested_slug: string
 }
+
+export interface SeoTitleFormula {
+  pattern: string
+  example: string
+  content_types: string[]
+}
+
+export interface SeoIntroFormula {
+  template: string
+  variants: string[]
+  seo_anchor_phrase: string
+}
+
+export interface SeoTechnicalSignal {
+  signal: string
+  rule: string
+}
+
+export interface SeoKeywordStrategy {
+  high_volume_categories: Record<string, string>
+  high_intent_topics: Record<string, string>
+  your_unique_niche: {
+    gap: string
+    opportunity: string
+    examples: string[]
+  }
+  quick_wins: Record<string, string>
+}
+
+export interface SeoGuidelines {
+  title_formulas: SeoTitleFormula[]
+  intro_formula: SeoIntroFormula
+  post_structure: Record<string, string[]>
+  seo_checklist: Record<string, string[]>
+  technical_signals: SeoTechnicalSignal[]
+  keyword_strategy: SeoKeywordStrategy
+  publishing_tips: Record<string, string>
+}

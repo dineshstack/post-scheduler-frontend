@@ -18,6 +18,7 @@ import type {
   PostIdea,
   RegisterPayload,
   SeoFormula,
+  SeoGuidelines,
   SeoTitlesResponse,
   StorePostIdeaPayload,
   StorePostPayload,
@@ -339,6 +340,13 @@ export const postIdeasApi = {
 export const seoApi = {
   formulas: async (): Promise<{ formulas: SeoFormula[] }> => {
     const { data } = await http.get<{ formulas: SeoFormula[] }>('/seo/formulas')
+    return data
+  },
+
+  guidelines: async (contentType?: string): Promise<SeoGuidelines> => {
+    const { data } = await http.get<SeoGuidelines>('/seo/guidelines', {
+      params: contentType ? { content_type: contentType } : undefined,
+    })
     return data
   },
 }

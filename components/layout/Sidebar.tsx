@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   BarChart2, CalendarDays, LayoutDashboard, Lightbulb, Link2, ListTodo,
-  LogOut, Moon, Plus, Sun, User
+  LogOut, Moon, Plus, Search, Sun, User
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
@@ -64,6 +64,7 @@ export default function Sidebar() {
         <NavItem href="/dashboard/compose"    label="Compose"   icon={Plus} exact />
         <NavItem href="/dashboard/posts"      label="Queue"     icon={ListTodo} />
         <NavItem href="/dashboard/ideas"      label="Ideas"     icon={Lightbulb} />
+        <NavItem href="/dashboard/seo"        label="SEO"       icon={Search} />
         <NavItem href="/dashboard/calendar"   label="Calendar"  icon={CalendarDays} />
         <NavItem href="/dashboard/analytics"  label="Analytics" icon={BarChart2} />
 

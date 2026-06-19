@@ -4,7 +4,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { analyticsApi, analyticsInsightsApi, authApi, blogMetaApi, galleryApi, platformAccountsApi, postIdeasApi, postsApi } from '@/lib/api'
+import { analyticsApi, analyticsInsightsApi, authApi, blogMetaApi, galleryApi, platformAccountsApi, postIdeasApi, postsApi, seoApi } from '@/lib/api'
 import { useAuthStore } from '@/lib/stores/auth.store'
 import type { StorePostIdeaPayload, StorePostPayload } from '@/lib/types'
 
@@ -258,6 +258,16 @@ export function useBlogMeta(enabled: boolean) {
     queryFn:  blogMetaApi.getMeta,
     enabled,
     staleTime: 10 * 60 * 1000,
+  })
+}
+
+// SEO hooks
+
+export function useSeoGuidelines(contentType?: string) {
+  return useQuery({
+    queryKey: ['seo', 'guidelines', contentType ?? 'all'],
+    queryFn:  () => seoApi.guidelines(contentType),
+    staleTime: 60 * 60 * 1000, // 1 hour — static content
   })
 }
 
