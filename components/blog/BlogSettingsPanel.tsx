@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronUp, Plus, X } from 'lucide-react'
 import { useBlogMeta } from '@/lib/hooks'
-import type { BlogCaseStudy, PerPlatformOverride } from '@/lib/types'
+import type { BlogCaseStudy, FaqItem, PerPlatformOverride } from '@/lib/types'
 
 const labelCls = 'block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-1'
 const inputCls = 'w-full rounded-lg border border-[var(--line)] bg-[var(--surface-subtle)] px-3 py-2 text-sm text-[var(--text-base)] placeholder:text-[var(--text-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-colors'
@@ -12,15 +12,18 @@ const textareaCls = `${inputCls} resize-none`
 interface Props {
   value:      PerPlatformOverride
   onChange:   (v: PerPlatformOverride) => void
-  postType?:  'article' | 'tutorial' | 'case_study'
+  postType?:  'article' | 'tutorial' | 'case_study' | 'tip'
 }
 
 export default function BlogSettingsPanel({ value, onChange, postType }: Props) {
   const { data: meta } = useBlogMeta(true)
-  const [tagInput,  setTagInput]  = useState('')
-  const [seoOpen,   setSeoOpen]   = useState(false)
-  const [csOpen,    setCsOpen]    = useState(false)
-  const [techInput, setTechInput] = useState('')
+  const [tagInput,   setTagInput]  = useState('')
+  const [seoOpen,    setSeoOpen]   = useState(false)
+  const [csOpen,     setCsOpen]    = useState(false)
+  const [aiOpen,     setAiOpen]    = useState(false)
+  const [techInput,  setTechInput] = useState('')
+  const [faqQ,       setFaqQ]      = useState('')
+  const [faqA,       setFaqA]      = useState('')
 
   const set = (patch: Partial<PerPlatformOverride>) => onChange({ ...value, ...patch })
 
@@ -55,6 +58,19 @@ export default function BlogSettingsPanel({ value, onChange, postType }: Props) 
     }
     setTechInput('')
   }
+
+  // ── FAQ ───────────────────────────────────────────────────────────────────────
+
+  const faqItems = value.faq ?? []
+  const addFaq = () => {
+    const q = faqQ.trim()
+    const a = faqA.trim()
+    if (!q || !a) return
+    set({ faq: [...faqItems, { question: q, answer: a }] })
+    setFaqQ('')
+    setFaqA('')
+  }
+  const removeFaq = (i: number) => set({ faq: faqItems.filter((_, idx) => idx !== i) })
 
   return (
     <div className="space-y-4">
@@ -140,8 +156,32 @@ export default function BlogSettingsPanel({ value, onChange, postType }: Props) 
         </div>
       </div>
 
+      {/* Video & GitHub URLs */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div>
+          <label className={labelCls}>Video URL</label>
+          <input
+            type="url"
+            value={value.video_url ?? ''}
+            onChange={(e) => set({ video_url: e.target.value || undefined })}
+            placeholder="https://youtube.com/watch?v=…"
+            className={inputCls}
+          />
+        </div>
+        <div>
+          <label className={labelCls}>GitHub repo URL</label>
+          <input
+            type="url"
+            value={value.github_repo_url ?? ''}
+            onChange={(e) => set({ github_repo_url: e.target.value || undefined })}
+            placeholder="https://github.com/user/repo"
+            className={inputCls}
+          />
+        </div>
+      </div>
+
       {/* Options row */}
-      <div className="flex gap-4">
+      <div className="flex flex-wrap gap-4">
         <label className="flex items-center gap-2 cursor-pointer select-none">
           <input
             type="checkbox"
@@ -160,6 +200,113 @@ export default function BlogSettingsPanel({ value, onChange, postType }: Props) 
           />
           <span className="text-xs text-[var(--text-muted)]">Featured post</span>
         </label>
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={value.is_premium ?? false}
+            onChange={(e) => set({ is_premium: e.target.checked, free_preview_paragraphs: e.target.checked ? (value.free_preview_paragraphs ?? 3) : undefined })}
+            className="rounded border-[var(--line)] text-[var(--accent)] focus:ring-[var(--accent)]"
+          />
+          <span className="text-xs text-[var(--text-muted)]">Premium content</span>
+        </label>
+        {value.is_premium && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[var(--text-muted)]">Free preview paragraphs:</span>
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={value.free_preview_paragraphs ?? 3}
+              onChange={(e) => set({ free_preview_paragraphs: Number(e.target.value) })}
+              className="w-16 rounded-lg border border-[var(--line)] bg-[var(--surface-subtle)] px-2 py-1 text-sm text-[var(--text-base)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* AI / LLM accordion */}
+      <div className="rounded-xl border border-[var(--line)] overflow-hidden">
+        <button type="button"
+          onClick={() => setAiOpen((v) => !v)}
+          className="flex w-full items-center justify-between px-4 py-3 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide hover:bg-[var(--surface-subtle)] transition-colors"
+        >
+          AI &amp; LLM optimisation
+          {aiOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+        </button>
+
+        {aiOpen && (
+          <div className="px-4 pb-4 space-y-4 border-t border-[var(--line)]">
+            {/* LLM snippet */}
+            <div className="mt-3">
+              <label className={labelCls}>
+                LLM snippet <span className="normal-case font-normal">({(value.llm_snippet ?? '').length}/1000)</span>
+              </label>
+              <textarea
+                value={value.llm_snippet ?? ''}
+                onChange={(e) => set({ llm_snippet: e.target.value || undefined })}
+                placeholder="1–2 sentence summary optimised for AI Overviews and ChatGPT citations…"
+                rows={3}
+                maxLength={1000}
+                className={textareaCls}
+              />
+            </div>
+
+            {/* FAQ */}
+            <div>
+              <label className={labelCls}>FAQ items</label>
+              {faqItems.length > 0 && (
+                <div className="space-y-2 mb-3">
+                  {faqItems.map((item: FaqItem, i: number) => (
+                    <div key={i} className="flex items-start gap-2 rounded-lg border border-[var(--line)] bg-[var(--surface-subtle)] p-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-[var(--text-base)] truncate">Q: {item.question}</p>
+                        <p className="text-xs text-[var(--text-muted)] mt-0.5 line-clamp-2">A: {item.answer}</p>
+                      </div>
+                      <button type="button" onClick={() => removeFaq(i)} className="text-[var(--text-faint)] hover:text-red-500 shrink-0">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="space-y-2">
+                <input
+                  value={faqQ}
+                  onChange={(e) => setFaqQ(e.target.value)}
+                  placeholder="Question…"
+                  className={inputCls}
+                />
+                <textarea
+                  value={faqA}
+                  onChange={(e) => setFaqA(e.target.value)}
+                  placeholder="Answer…"
+                  rows={2}
+                  className={textareaCls}
+                />
+                <button
+                  type="button"
+                  onClick={addFaq}
+                  disabled={!faqQ.trim() || !faqA.trim()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--line)] text-xs text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors disabled:opacity-40"
+                >
+                  <Plus className="h-3 w-3" /> Add FAQ item
+                </button>
+              </div>
+            </div>
+
+            {/* Content freshness */}
+            <div>
+              <label className={labelCls}>Last reviewed date</label>
+              <input
+                type="date"
+                value={value.last_reviewed_at ? value.last_reviewed_at.slice(0, 10) : ''}
+                onChange={(e) => set({ last_reviewed_at: e.target.value || undefined })}
+                className={inputCls}
+              />
+              <p className="text-[10px] text-[var(--text-faint)] mt-1">Used for content freshness signals in search</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* SEO accordion */}

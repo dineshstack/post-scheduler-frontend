@@ -63,6 +63,11 @@ export interface BlogCaseStudy {
   duration?: string
 }
 
+export interface FaqItem {
+  question: string
+  answer: string
+}
+
 export interface PerPlatformOverride {
   body?: string
   title?: string
@@ -78,6 +83,16 @@ export interface PerPlatformOverride {
   is_featured?: boolean
   allow_comments?: boolean
   case_study?: BlogCaseStudy
+  // Blog new fields (2026)
+  video_url?: string
+  github_repo_url?: string
+  is_premium?: boolean
+  free_preview_paragraphs?: number
+  llm_snippet?: string
+  faq?: FaqItem[]
+  last_reviewed_at?: string
+  pillar_post_id?: number
+  related_post_ids?: number[]
   // Dev.to-specific (max 4 tags, no hyphens)
   series?: string
   description?: string  // shown in dev.to feed cards
@@ -119,7 +134,7 @@ export interface Post {
   published_at: string | null
   status: PostStatus
   blog_slug: string | null
-  blog_post_type: 'article' | 'tutorial' | 'case_study' | null
+  blog_post_type: 'article' | 'tutorial' | 'case_study' | 'tip' | null
   blog_locale: 'en' | 'si' | 'ar' | null
   blog_post_id: number | null
   notes: string | null
@@ -154,7 +169,7 @@ export interface StorePostPayload {
   notes?: string
   first_comment?: string
   blog_slug?: string
-  blog_post_type?: 'article' | 'tutorial' | 'case_study'
+  blog_post_type?: 'article' | 'tutorial' | 'case_study' | 'tip'
   blog_locale?: 'en' | 'si' | 'ar'
 }
 

@@ -53,7 +53,7 @@ const schema = z.object({
   platforms:      z.array(z.string()).min(1, 'Select at least one platform'),
   scheduled_at:   z.string().nullable().optional(),
   blog_slug:      z.string().optional(),
-  blog_post_type: z.enum(['article', 'tutorial', 'case_study']).optional(),
+  blog_post_type: z.enum(['article', 'tutorial', 'case_study', 'tip']).optional(),
   blog_locale:    z.enum(['en', 'si', 'ar']).optional(),
   notes:          z.string().optional(),
   first_comment:  z.string().max(2200).optional(),
@@ -67,6 +67,15 @@ const schema = z.object({
     canonical_url:    z.string().optional(),
     is_featured:      z.boolean().optional(),
     allow_comments:   z.boolean().optional(),
+    is_premium:       z.boolean().optional(),
+    free_preview_paragraphs: z.number().min(1).max(20).optional(),
+    video_url:        z.string().optional(),
+    github_repo_url:  z.string().optional(),
+    llm_snippet:      z.string().max(1000).optional(),
+    faq: z.array(z.object({ question: z.string(), answer: z.string() })).optional(),
+    last_reviewed_at: z.string().optional(),
+    pillar_post_id:   z.number().optional(),
+    related_post_ids: z.array(z.number()).optional(),
     case_study: z.object({
       client: z.string().optional(), industry: z.string().optional(),
       challenge: z.string().optional(), solution: z.string().optional(),
@@ -471,6 +480,7 @@ export default function ComposePage() {
                   <option value="article">Article</option>
                   <option value="tutorial">Tutorial</option>
                   <option value="case_study">Case Study</option>
+                  <option value="tip">Quick Tip</option>
                 </select>
               </div>
 
@@ -499,7 +509,7 @@ export default function ComposePage() {
               <BlogSettingsPanel
                 value={watchedOverrides['blog'] ?? {}}
                 onChange={(v) => setValue('overrides.blog', v, { shouldDirty: true })}
-                postType={watch('blog_post_type') as 'article' | 'tutorial' | 'case_study' | undefined}
+                postType={watch('blog_post_type') as 'article' | 'tutorial' | 'case_study' | 'tip' | undefined}
               />
             </div>
           )}
