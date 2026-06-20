@@ -84,6 +84,7 @@ export interface PerPlatformOverride {
   allow_comments?: boolean
   case_study?: BlogCaseStudy
   // Blog new fields (2026)
+  og_image?: string
   video_url?: string
   github_repo_url?: string
   is_premium?: boolean

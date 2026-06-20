@@ -91,6 +91,19 @@ export default function BlogSettingsPanel({ value, onChange, postType }: Props) 
         </p>
       </div>
 
+      {/* OG Image URL */}
+      <div>
+        <label className={labelCls}>OG image URL</label>
+        <input
+          type="url"
+          value={value.og_image ?? ''}
+          onChange={(e) => set({ og_image: e.target.value || undefined })}
+          placeholder="https://cdn.example.com/og-cover.jpg"
+          className={inputCls}
+        />
+        <p className="text-[10px] text-[var(--text-faint)] mt-1">Social share image (overrides cover image for Open Graph)</p>
+      </div>
+
       {/* Category */}
       <div>
         <label className={labelCls}>Category</label>

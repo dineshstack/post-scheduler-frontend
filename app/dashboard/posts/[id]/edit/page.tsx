@@ -63,6 +63,7 @@ const schema = z.object({
     canonical_url:    z.string().optional(),
     is_featured:      z.boolean().optional(),
     allow_comments:   z.boolean().optional(),
+    og_image:         z.string().optional(),
     is_premium:       z.boolean().optional(),
     free_preview_paragraphs: z.number().min(1).max(20).optional(),
     video_url:        z.string().optional(),
