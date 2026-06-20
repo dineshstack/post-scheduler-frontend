@@ -12,6 +12,7 @@ import { Button, Input, Textarea, DateTimePicker } from '@/components/ui'
 import MediaLibraryModal from '@/components/media/MediaLibraryModal'
 import { usePlatformAccounts, usePost, useUpdatePost } from '@/lib/hooks'
 import BlogSettingsPanel from '@/components/blog/BlogSettingsPanel'
+import BlogSeoChecklist from '@/components/blog/BlogSeoChecklist'
 import DevToSettingsPanel from '@/components/devto/DevToSettingsPanel'
 import MediumSettingsPanel from '@/components/medium/MediumSettingsPanel'
 import type { GalleryItem, Platform } from '@/lib/types'
@@ -498,6 +499,9 @@ export default function EditPostPage() {
               />
             </div>
           )}
+
+          {/* SEO checklist — shown whenever blog is a selected platform */}
+          {hasBlog && <BlogSeoChecklist />}
 
           {/* Dev.to settings */}
           {hasDevTo && (

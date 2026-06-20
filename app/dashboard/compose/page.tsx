@@ -13,6 +13,7 @@ import MediaLibraryModal from '@/components/media/MediaLibraryModal'
 import CaptionGenerator from '@/components/ai/CaptionGenerator'
 import SeoTitleGenerator from '@/components/ai/SeoTitleGenerator'
 import BlogSettingsPanel from '@/components/blog/BlogSettingsPanel'
+import BlogSeoChecklist from '@/components/blog/BlogSeoChecklist'
 import DevToSettingsPanel from '@/components/devto/DevToSettingsPanel'
 import MediumSettingsPanel from '@/components/medium/MediumSettingsPanel'
 import { useAnalyticsBestTimes, useCreatePost, usePlatformAccounts } from '@/lib/hooks'
@@ -514,6 +515,9 @@ export default function ComposePage() {
               />
             </div>
           )}
+
+          {/* SEO checklist — shown whenever blog is a selected platform */}
+          {hasBlog && <BlogSeoChecklist />}
 
           {/* Dev.to-specific */}
           {hasDevTo && (
