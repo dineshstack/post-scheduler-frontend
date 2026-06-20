@@ -326,6 +326,9 @@ export default function ComposePage() {
         {/*  Sidebar  */}
         <div className="space-y-4">
 
+          {/* SEO checklist — top of sidebar for easy reference while writing */}
+          {hasBlog && <BlogSeoChecklist />}
+
           {/* Action buttons */}
           <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-card)] p-4 space-y-3">
             <h3 className="font-semibold text-sm text-[var(--text-base)]">Publish</h3>
@@ -515,9 +518,6 @@ export default function ComposePage() {
               />
             </div>
           )}
-
-          {/* SEO checklist — shown whenever blog is a selected platform */}
-          {hasBlog && <BlogSeoChecklist />}
 
           {/* Dev.to-specific */}
           {hasDevTo && (
