@@ -8,6 +8,7 @@ import {
   Edit2, ExternalLink, RefreshCw, XCircle,
 } from 'lucide-react'
 import AppLayout from '@/components/layout/AppLayout'
+import BlogPreviewCard from '@/components/distribution/BlogPreviewCard'
 import DistributionPreviewPanel from '@/components/distribution/DistributionPreviewPanel'
 import { Button, Card, CardContent, CardHeader, CardTitle, PlatformChips, StatusBadge } from '@/components/ui'
 import { usePost, usePublishNow } from '@/lib/hooks'
@@ -148,10 +149,13 @@ export default function PostDetailPage({ params }: { params: Promise<{ id: strin
           </CardContent>
         </Card>
 
+        {/* How the post will look on the blog itself */}
+        <BlogPreviewCard post={post} />
+
         {/* What each platform will receive (draft/scheduled) or actually received (published) */}
         <DistributionPreviewPanel post={post} />
 
-        {/* Body preview */}
+        {/* Raw content, unstyled — useful for copy-checking regardless of platform */}
         <Card>
           <CardHeader>
             <CardTitle>Content</CardTitle>

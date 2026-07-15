@@ -8,13 +8,14 @@ import { useGeneratePreviews, usePostPreviews } from '@/lib/hooks'
 import type { DistributionPreview, Platform, Post } from '@/lib/types'
 
 // Platforms with previewable outgoing copy (matches backend ComposesPreview)
-const PREVIEWABLE: Platform[] = ['twitter', 'linkedin', 'facebook', 'devto']
+const PREVIEWABLE: Platform[] = ['twitter', 'linkedin', 'facebook', 'devto', 'tiktok']
 
 const PLATFORM_META: Record<string, { label: string; icon: string }> = {
   twitter:  { label: 'Twitter / X', icon: '𝕏' },
   linkedin: { label: 'LinkedIn',    icon: '💼' },
   facebook: { label: 'Facebook',    icon: '📘' },
   devto:    { label: 'Dev.to',      icon: '👩‍💻' },
+  tiktok:   { label: 'TikTok',      icon: '🎵' },
 }
 
 function StaleBadge() {
@@ -102,6 +103,27 @@ function PreviewBody({ platform, preview }: { platform: string; preview: Distrib
           <p className="text-sm text-[var(--text-base)] whitespace-pre-wrap break-words">{preview.message}</p>
         </div>
         {preview.link && <LinkLine url={preview.link} label="Preview card links to" />}
+      </div>
+    )
+  }
+
+  if (platform === 'tiktok') {
+    const over = (preview.title?.length ?? 0) > 150
+    return (
+      <div className="space-y-2">
+        <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-subtle)] p-4">
+          <p className="text-sm text-[var(--text-base)] whitespace-pre-wrap break-words">{preview.title}</p>
+        </div>
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-[var(--text-faint)]">
+            {preview.media_type === 'PHOTO'
+              ? `Photo post · ${preview.photo_count} image${preview.photo_count === 1 ? '' : 's'}`
+              : 'Video post — needs a video attached, or it publishes as a photo post'}
+          </span>
+          <span className={over ? 'text-red-500 font-medium' : 'text-emerald-600 dark:text-emerald-400 font-medium'}>
+            {preview.title?.length ?? 0}/150 chars
+          </span>
+        </div>
       </div>
     )
   }

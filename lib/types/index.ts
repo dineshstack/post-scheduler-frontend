@@ -450,6 +450,10 @@ export interface DistributionPreview {
   // devto
   body_markdown?: string
   canonical_url?: string | null
+  // tiktok
+  title?: string
+  media_type?: 'PHOTO' | 'VIDEO'
+  photo_count?: number
   // common
   generated_at?: string
   sent_at?: string
