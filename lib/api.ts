@@ -198,6 +198,13 @@ export const platformAccountsApi = {
     })
     return data.account
   },
+
+  connectDevTo: async (apiKey: string): Promise<PlatformAccount> => {
+    const { data } = await http.post<{ account: PlatformAccount }>('/auth/devto/connect', {
+      api_key: apiKey,
+    })
+    return data.account
+  },
 }
 
 // Gallery / Media Library

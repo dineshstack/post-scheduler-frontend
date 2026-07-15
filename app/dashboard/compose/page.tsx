@@ -33,6 +33,9 @@ const CKEditorField = dynamic(() => import('@/components/editor/CKEditorField'),
 // Platforms with dedicated settings panels — excluded from the generic overrides accordion
 const PANEL_PLATFORMS = new Set<Platform>(['blog', 'devto', 'medium'])
 
+// Platforms that get an AI-written teaser + tracked blog link — previewable after saving
+const AI_TEASER_PLATFORMS = new Set<Platform>(['twitter', 'linkedin', 'facebook', 'devto'])
+
 const PLATFORM_META: Record<Platform, { label: string; icon: string; charLimit: number }> = {
   twitter:   { label: 'Twitter / X',  icon: '𝕏',  charLimit: 280 },
   linkedin:  { label: 'LinkedIn',      icon: '💼', charLimit: 3000 },
@@ -253,7 +256,9 @@ export default function ComposePage() {
         notes:                   values.notes,
         first_comment:           values.first_comment || undefined,
       },
-      { onSuccess: () => router.push('/dashboard/posts') }
+      // Land on the post's own page, not the list — that's where the AI
+      // distribution preview (Twitter/LinkedIn/Facebook/dev.to teasers) lives.
+      { onSuccess: (post) => router.push(`/dashboard/posts/${post.id}`) }
     )
   }
 
@@ -415,6 +420,13 @@ export default function ComposePage() {
             />
             {errors.platforms && (
               <p className="text-xs text-red-500">{errors.platforms.message}</p>
+            )}
+            {watchedPlatforms.some((p) => AI_TEASER_PLATFORMS.has(p)) && (
+              <p className="flex items-start gap-1.5 text-[11px] text-[var(--text-faint)]">
+                <Sparkles className="h-3 w-3 shrink-0 mt-0.5 text-[var(--accent)]" />
+                Twitter/LinkedIn/Facebook/dev.to get an AI-written teaser and a tracked blog link.
+                Save the post to preview the exact copy before it ships.
+              </p>
             )}
           </div>
 
