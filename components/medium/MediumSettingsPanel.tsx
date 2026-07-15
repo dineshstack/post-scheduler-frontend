@@ -4,8 +4,10 @@ import { useState } from 'react'
 import { AlertCircle, Plus, X } from 'lucide-react'
 import type { PerPlatformOverride } from '@/lib/types'
 
-// Medium enforces: max 3 tags; posts cannot be edited via API after publishing
-const MAX_TAGS = 3
+// Medium's own website allows up to 5 Topics per story (the old 3-tag cap
+// was the retired publishing API's limit, which no longer applies here).
+const MAX_TAGS = 5
+const SUBTITLE_MAX = 140
 
 const labelCls = 'block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-1'
 const inputCls = 'w-full rounded-lg border border-[var(--line)] bg-[var(--surface-subtle)] px-3 py-2 text-sm text-[var(--text-base)] placeholder:text-[var(--text-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-colors'
@@ -38,18 +40,38 @@ export default function MediumSettingsPanel({ value, onChange }: Props) {
   return (
     <div className="space-y-4">
 
-      {/* Immutability warning */}
+      {/* Manual-publishing notice */}
       <div className="flex gap-2 rounded-lg border border-amber-400/40 bg-amber-50/60 dark:bg-amber-900/20 px-3 py-2.5">
         <AlertCircle className="h-3.5 w-3.5 text-amber-500 mt-0.5 shrink-0" />
         <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-relaxed">
-          Medium posts <strong>cannot be edited via API</strong> after publishing. Double-check content before scheduling.
+          Medium retired its publishing API, so this never auto-sends. Save the post, then open its{' '}
+          <strong>Previews</strong> panel for AI-suggested topics and a subtitle to paste into Medium&rsquo;s own{' '}
+          <strong>Import a story</strong> tool. Once imported, Medium posts can&rsquo;t be edited via API either way.
         </p>
       </div>
 
-      {/* Tags — max 3 */}
+      {/* Subtitle — shown under the title on Medium's story preview */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <label className={labelCls}>Tags</label>
+          <label className={labelCls}>Subtitle</label>
+          <span className="text-[10px] font-medium text-[var(--text-faint)]">
+            {(value.subtitle ?? '').length}/{SUBTITLE_MAX}
+          </span>
+        </div>
+        <textarea
+          value={value.subtitle ?? ''}
+          onChange={(e) => set({ subtitle: e.target.value })}
+          placeholder="A one-line explanation of what the reader will learn (leave blank to let AI suggest one)"
+          rows={2}
+          maxLength={SUBTITLE_MAX}
+          className={`${inputCls} resize-none`}
+        />
+      </div>
+
+      {/* Topics — Medium's own website allows up to 5 */}
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <label className={labelCls}>Topics</label>
           <span className={`text-[10px] font-medium ${atLimit ? 'text-amber-500' : 'text-[var(--text-faint)]'}`}>
             {tags.length}/{MAX_TAGS}
           </span>
@@ -76,7 +98,7 @@ export default function MediumSettingsPanel({ value, onChange }: Props) {
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput) } }}
-              placeholder="Add tag…"
+              placeholder="Add topic… (leave blank to let AI suggest 5)"
               className={inputCls}
             />
             <button type="button" onClick={() => addTag(tagInput)}
@@ -89,7 +111,7 @@ export default function MediumSettingsPanel({ value, onChange }: Props) {
         )}
 
         {atLimit && (
-          <p className="text-[10px] text-amber-500 mt-1">Maximum 3 tags reached (Medium limit).</p>
+          <p className="text-[10px] text-amber-500 mt-1">Maximum 5 topics reached (Medium limit).</p>
         )}
       </div>
 

@@ -99,10 +99,13 @@ export interface PerPlatformOverride {
   description?: string  // shown in dev.to feed cards
   main_image?: string   // cover image URL
   published?: boolean   // false = save as draft on dev.to
-  // Medium-specific (max 3 tags, posts are immutable after publish)
+  // Medium-specific — publishing is manual (Medium retired its API); the
+  // AI-suggested topics/subtitle here are meant to be copied into Medium's
+  // own Import tool. Posts are immutable there after publish.
   publish_status?: 'public' | 'draft' | 'unlisted'
   notify_followers?: boolean
   publication_id?: string
+  subtitle?: string // shown under the title on Medium's story preview, <=140 chars
 }
 
 export interface BlogCategory {
@@ -454,6 +457,9 @@ export interface DistributionPreview {
   title?: string
   media_type?: 'PHOTO' | 'VIDEO'
   photo_count?: number
+  // medium — suggestions to paste into Medium's own manual Import tool
+  topics?: string[]
+  subtitle?: string
   // common
   generated_at?: string
   sent_at?: string

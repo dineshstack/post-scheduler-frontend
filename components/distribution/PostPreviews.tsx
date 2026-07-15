@@ -10,8 +10,12 @@ import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/u
 import { useBlogMeta, useGeneratePreviews, usePostPreviews } from '@/lib/hooks'
 import type { DistributionPreview, Platform, Post } from '@/lib/types'
 
-// Social/dev.to/tiktok platforms with AI-composed outgoing copy (matches backend ComposesPreview)
-const PREVIEWABLE: Platform[] = ['twitter', 'linkedin', 'facebook', 'devto', 'tiktok']
+// Social/dev.to/tiktok/medium platforms with AI-composed outgoing copy (matches backend ComposesPreview)
+const PREVIEWABLE: Platform[] = ['twitter', 'linkedin', 'facebook', 'devto', 'tiktok', 'medium']
+
+// Platforms that actually auto-publish. Medium's API is retired, so its
+// preview is manual-copy only — no "Sent"/live-link tracking applies to it.
+const AUTO_PUBLISHED: Platform[] = ['twitter', 'linkedin', 'facebook', 'devto', 'tiktok']
 
 const PLATFORM_META: Record<string, { label: string; icon: string }> = {
   blog:     { label: 'Blog',        icon: '📝' },
@@ -20,6 +24,7 @@ const PLATFORM_META: Record<string, { label: string; icon: string }> = {
   facebook: { label: 'Facebook',    icon: '📘' },
   devto:    { label: 'Dev.to',      icon: '👩‍💻' },
   tiktok:   { label: 'TikTok',      icon: '🎵' },
+  medium:   { label: 'Medium',      icon: '✍️' },
 }
 
 const TYPE_LABEL: Record<string, string> = {
@@ -234,6 +239,49 @@ function SocialPreviewBody({ platform, preview }: { platform: string; preview: D
           <span className={over ? 'text-red-500 font-medium' : 'text-emerald-600 dark:text-emerald-400 font-medium'}>
             {preview.title?.length ?? 0}/150 chars
           </span>
+        </div>
+      </div>
+    )
+  }
+
+  if (platform === 'medium') {
+    const topics = preview.topics ?? []
+    return (
+      <div className="space-y-3">
+        <div className="flex gap-2 rounded-lg border border-amber-400/40 bg-amber-50/60 dark:bg-amber-900/20 px-3 py-2.5">
+          <AlertTriangle className="h-3.5 w-3.5 text-amber-500 mt-0.5 shrink-0" />
+          <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-relaxed">
+            Medium retired its publishing API — this never auto-sends. Copy these into Medium&rsquo;s own{' '}
+            <a href="https://medium.com/p/import" target="_blank" rel="noopener noreferrer" className="underline">
+              Import a story
+            </a>{' '}
+            tool: Topics go in the &ldquo;Add a topic&rdquo; box, the subtitle under the title.
+          </p>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-1.5">
+            Suggested topics (up to 5, most relevant first)
+          </p>
+          {topics.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {topics.map((t) => (
+                <span key={t} className="rounded-full bg-[var(--accent-subtle)] px-2.5 py-1 text-xs font-medium text-[var(--accent-text)]">
+                  {t}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-[var(--text-faint)]">No topics yet.</p>
+          )}
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-1.5">Suggested subtitle</p>
+          <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-subtle)] p-4">
+            <p className="text-sm text-[var(--text-base)] whitespace-pre-wrap break-words">{preview.subtitle}</p>
+          </div>
+          <p className="text-xs text-right text-[var(--text-faint)] mt-1">{preview.subtitle?.length ?? 0}/140 chars</p>
         </div>
       </div>
     )

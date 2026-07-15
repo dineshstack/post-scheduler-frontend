@@ -92,9 +92,10 @@ const schema = z.object({
     description:     z.string().max(500).optional(),
     main_image:      z.string().optional(),
     published:       z.boolean().optional(),
-    // Medium-specific (max 3 tags, posts are immutable after publish)
+    // Medium-specific (manual Import flow — API retired; posts immutable there after publish)
     publish_status:  z.enum(['public', 'draft', 'unlisted']).optional(),
     notify_followers: z.boolean().optional(),
+    subtitle:        z.string().max(140).optional(),
     publication_id:  z.string().optional(),
   })).optional(),
 })
