@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "../post-scheduler-backend"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {}
+}
