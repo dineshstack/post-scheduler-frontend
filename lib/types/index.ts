@@ -452,6 +452,8 @@ export interface DistributionPreview {
   canonical_url?: string | null
   // common
   generated_at?: string
+  sent_at?: string
+  ai_generated?: boolean
   stale?: boolean
 }
 

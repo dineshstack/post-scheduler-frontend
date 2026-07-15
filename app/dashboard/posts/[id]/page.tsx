@@ -20,6 +20,8 @@ const PLATFORM_LABELS: Record<string, string> = {
   facebook:  '📘 Facebook',
   tiktok:    '🎵 TikTok',
   blog:      '📝 Blog',
+  devto:     '👩‍💻 Dev.to',
+  medium:    '✍️ Medium',
 }
 
 function LogStatusIcon({ status }: { status: PostPlatformLog['status'] }) {
@@ -146,8 +148,8 @@ export default function PostDetailPage({ params }: { params: Promise<{ id: strin
           </CardContent>
         </Card>
 
-        {/* What each platform will actually receive */}
-        {post.status !== 'published' && <DistributionPreviewPanel post={post} />}
+        {/* What each platform will receive (draft/scheduled) or actually received (published) */}
+        <DistributionPreviewPanel post={post} />
 
         {/* Body preview */}
         <Card>
