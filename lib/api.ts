@@ -8,6 +8,7 @@ import type {
   BlogMetaResponse,
   AuthResponse,
   CalendarPostsResponse,
+  DistributionPreviewsResponse,
   GalleryFolder,
   GalleryItem,
   LoginPayload,
@@ -145,6 +146,18 @@ export const postsApi = {
   publishNow: async (id: number): Promise<Post> => {
     const { data } = await http.post<{ post: Post }>(`/posts/${id}/publish-now`)
     return data.post
+  },
+
+  // Stored distribution previews (no AI cost)
+  previews: async (id: number): Promise<DistributionPreviewsResponse> => {
+    const { data } = await http.get<DistributionPreviewsResponse>(`/posts/${id}/previews`)
+    return data
+  },
+
+  // Compose fresh previews (generates AI teasers) and store them
+  generatePreviews: async (id: number): Promise<DistributionPreviewsResponse> => {
+    const { data } = await http.post<DistributionPreviewsResponse>(`/posts/${id}/previews`)
+    return data
   },
 
   calendar: async (from: string, to: string): Promise<CalendarPostsResponse> => {

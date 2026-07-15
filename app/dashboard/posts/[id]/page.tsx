@@ -8,6 +8,7 @@ import {
   Edit2, ExternalLink, RefreshCw, XCircle,
 } from 'lucide-react'
 import AppLayout from '@/components/layout/AppLayout'
+import DistributionPreviewPanel from '@/components/distribution/DistributionPreviewPanel'
 import { Button, Card, CardContent, CardHeader, CardTitle, PlatformChips, StatusBadge } from '@/components/ui'
 import { usePost, usePublishNow } from '@/lib/hooks'
 import type { PostPlatformLog } from '@/lib/types'
@@ -144,6 +145,9 @@ export default function PostDetailPage({ params }: { params: Promise<{ id: strin
             </div>
           </CardContent>
         </Card>
+
+        {/* What each platform will actually receive */}
+        {post.status !== 'published' && <DistributionPreviewPanel post={post} />}
 
         {/* Body preview */}
         <Card>

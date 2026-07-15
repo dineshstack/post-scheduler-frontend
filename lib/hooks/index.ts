@@ -14,6 +14,7 @@ export const queryKeys = {
   me:               ['me']                       as const,
   posts:            (params?: object) => ['posts', params] as const,
   post:             (id: number)      => ['posts', id]     as const,
+  postPreviews:     (id: number)      => ['posts', id, 'previews'] as const,
   calendar:         (from: string, to: string) => ['calendar', from, to] as const,
   platformAccounts: ['platform-accounts']        as const,
   analyticsOverview:   (from: string, to: string) => ['analytics', 'overview', from, to] as const,
@@ -80,6 +81,27 @@ export function useCreatePost() {
       )
     },
     onError: () => toast.error('Failed to save post. Please try again.'),
+  })
+}
+
+export function usePostPreviews(id: number) {
+  return useQuery({
+    queryKey: queryKeys.postPreviews(id),
+    queryFn:  () => postsApi.previews(id),
+    enabled:  !!id,
+  })
+}
+
+export function useGeneratePreviews(id: number) {
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => postsApi.generatePreviews(id),
+    onSuccess: (data) => {
+      qc.setQueryData(queryKeys.postPreviews(id), data)
+      toast.success('✨ Previews generated — this is exactly what each platform will receive.')
+    },
+    onError: () => toast.error('Failed to generate previews.'),
   })
 }
 

@@ -432,3 +432,35 @@ export interface SeoGuidelines {
   keyword_strategy: SeoKeywordStrategy
   publishing_tips: Record<string, string>
 }
+
+// ── Distribution previews ────────────────────────────────────────────────────
+// Composed per-platform payloads returned by /posts/{id}/previews — exactly
+// what the publisher would send. Shape varies by platform.
+
+export interface DistributionPreview {
+  // twitter
+  text?: string
+  char_count?: number
+  limit?: number
+  // linkedin
+  article_url?: string | null
+  // facebook
+  message?: string
+  link?: string | null
+  // devto
+  body_markdown?: string
+  canonical_url?: string | null
+  // common
+  generated_at?: string
+  stale?: boolean
+}
+
+export interface LintReport {
+  blockers: string[]
+  warnings: string[]
+}
+
+export interface DistributionPreviewsResponse {
+  previews: Record<string, DistributionPreview>
+  lint: LintReport | null
+}

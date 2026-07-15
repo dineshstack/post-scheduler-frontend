@@ -5,6 +5,19 @@ import { ChevronDown, ChevronUp, Plus, X } from 'lucide-react'
 import { useBlogMeta } from '@/lib/hooks'
 import type { BlogCaseStudy, FaqItem, PerPlatformOverride } from '@/lib/types'
 
+// SERP-fit color guidance: green = fits, amber = risky, red = blog API rejects
+const metaTitleColor = (len: number) =>
+  len === 0 ? 'text-[var(--text-faint)]'
+  : len <= 60 ? 'text-emerald-600 dark:text-emerald-400'
+  : len <= 70 ? 'text-amber-600 dark:text-amber-400'
+  : 'text-red-500'
+
+const metaDescColor = (len: number) =>
+  len === 0 ? 'text-[var(--text-faint)]'
+  : len < 120 ? 'text-amber-600 dark:text-amber-400'
+  : len <= 160 ? 'text-emerald-600 dark:text-emerald-400'
+  : 'text-red-500'
+
 const labelCls = 'block text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-1'
 const inputCls = 'w-full rounded-lg border border-[var(--line)] bg-[var(--surface-subtle)] px-3 py-2 text-sm text-[var(--text-base)] placeholder:text-[var(--text-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-colors'
 const textareaCls = `${inputCls} resize-none`
@@ -26,6 +39,9 @@ export default function BlogSettingsPanel({ value, onChange, postType }: Props) 
   const [faqA,       setFaqA]      = useState('')
 
   const set = (patch: Partial<PerPlatformOverride>) => onChange({ ...value, ...patch })
+
+  const titleLen = (value.meta_title ?? '').length
+  const descLen  = (value.meta_description ?? '').length
 
   // ── Tags ──────────────────────────────────────────────────────────────────────
 
@@ -334,31 +350,48 @@ export default function BlogSettingsPanel({ value, onChange, postType }: Props) 
 
         {seoOpen && (
           <div className="px-4 pb-4 space-y-3 border-t border-[var(--line)]">
+            {/* No maxLength on these — the browser attribute silently cuts
+                pasted text mid-word at the limit, which is how truncated
+                meta shipped to production. Guide with colors instead. */}
             <div className="mt-3">
               <label className={labelCls}>
-                Meta title <span className="normal-case font-normal">({(value.meta_title ?? '').length}/70)</span>
+                Meta title{' '}
+                <span className={`normal-case font-normal ${metaTitleColor(titleLen)}`}>
+                  ({titleLen}/60 recommended)
+                </span>
               </label>
               <input
                 value={value.meta_title ?? ''}
                 onChange={(e) => set({ meta_title: e.target.value })}
                 placeholder="SEO title (defaults to post title)"
-                maxLength={70}
                 className={inputCls}
               />
+              {titleLen > 70 && (
+                <p className="text-[11px] text-red-500 mt-1">
+                  Over 70 — the blog rejects this. Rewrite it shorter (don't cut mid-word); Google truncates around 60.
+                </p>
+              )}
             </div>
 
             <div>
               <label className={labelCls}>
-                Meta description <span className="normal-case font-normal">({(value.meta_description ?? '').length}/160)</span>
+                Meta description{' '}
+                <span className={`normal-case font-normal ${metaDescColor(descLen)}`}>
+                  ({descLen}/120–160 ideal)
+                </span>
               </label>
               <textarea
                 value={value.meta_description ?? ''}
                 onChange={(e) => set({ meta_description: e.target.value })}
                 placeholder="SEO description (defaults to excerpt)"
-                rows={2}
-                maxLength={160}
+                rows={3}
                 className={textareaCls}
               />
+              {descLen > 160 && (
+                <p className="text-[11px] text-red-500 mt-1">
+                  Over 160 — the blog rejects this. Rewrite the ending as a full sentence instead of trimming mid-word.
+                </p>
+              )}
             </div>
 
             <div>

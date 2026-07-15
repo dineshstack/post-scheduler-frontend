@@ -63,8 +63,8 @@ const schema = z.object({
     excerpt:          z.string().max(500).optional(),
     category_id:      z.number().optional(),
     tags:             z.array(z.string()).optional(),
-    meta_title:       z.string().max(70).optional(),
-    meta_description: z.string().max(160).optional(),
+    meta_title:       z.string().max(255).optional(), // soft-guided in BlogSettingsPanel; hard limit enforced by blog API + lint
+    meta_description: z.string().max(500).optional(),
     canonical_url:    z.string().optional(),
     is_featured:      z.boolean().optional(),
     allow_comments:   z.boolean().optional(),
