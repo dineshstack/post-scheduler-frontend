@@ -6,11 +6,11 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import dynamic from 'next/dynamic'
-import { ChevronDown, ChevronUp, Image, Loader2, Save, Send, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, Image, Loader2, Save, Send, Sparkles, X } from 'lucide-react'
 import AppLayout from '@/components/layout/AppLayout'
 import { Button, Input, Textarea, DateTimePicker } from '@/components/ui'
 import MediaLibraryModal from '@/components/media/MediaLibraryModal'
-import { usePlatformAccounts, usePost, useUpdatePost } from '@/lib/hooks'
+import { useGenerateCover, usePlatformAccounts, usePost, useUpdatePost } from '@/lib/hooks'
 import BlogSettingsPanel from '@/components/blog/BlogSettingsPanel'
 import BlogSeoChecklist from '@/components/blog/BlogSeoChecklist'
 import DevToSettingsPanel from '@/components/devto/DevToSettingsPanel'
@@ -206,6 +206,7 @@ export default function EditPostPage() {
   const { data: post, isLoading: loadingPost } = usePost(postId)
   const { data: accounts } = usePlatformAccounts()
   const { mutate: updatePost, isPending } = useUpdatePost(postId)
+  const { mutate: generateCover, isPending: generatingCover } = useGenerateCover(postId)
 
   const [mediaOpen, setMediaOpen]       = useState(false)
   const [mediaItems, setMediaItems]     = useState<GalleryItem[]>([])
@@ -465,9 +466,27 @@ export default function EditPostPage() {
               </div>
             )}
 
-            <Button type="button" variant="secondary" size="sm" className="w-full" onClick={() => setMediaOpen(true)}>
-              <Image className="h-3.5 w-3.5" /> Add from gallery
-            </Button>
+            {mediaItems.length === 0 && !coverPreview && (
+              <p className="flex items-start gap-1.5 text-[11px] text-[var(--text-faint)]">
+                <Sparkles className="h-3 w-3 shrink-0 mt-0.5 text-[var(--accent)]" />
+                No cover yet — generate an on-brand one with AI, or add your own from the gallery.
+              </p>
+            )}
+
+            <div className="flex gap-2">
+              <Button type="button" variant="secondary" size="sm" className="flex-1" onClick={() => setMediaOpen(true)}>
+                <Image className="h-3.5 w-3.5" /> Add from gallery
+              </Button>
+              <Button
+                type="button" variant="secondary" size="sm" className="flex-1"
+                loading={generatingCover}
+                onClick={() => generateCover(undefined, {
+                  onSuccess: (item) => setMediaItems((prev) => [item, ...prev]),
+                })}
+              >
+                <Sparkles className="h-3.5 w-3.5" /> Generate cover
+              </Button>
+            </div>
           </div>
 
           {/* Blog settings */}

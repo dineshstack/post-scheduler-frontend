@@ -492,6 +492,13 @@ export default function ComposePage() {
             <Button type="button" variant="secondary" size="sm" className="w-full" onClick={() => setMediaOpen(true)}>
               <Plus className="h-3.5 w-3.5" /> Add from gallery
             </Button>
+
+            {mediaItems.length === 0 && (
+              <p className="flex items-start gap-1.5 text-[11px] text-[var(--text-faint)]">
+                <Sparkles className="h-3 w-3 shrink-0 mt-0.5 text-[var(--accent)]" />
+                No cover yet — save the post, then generate an on-brand one with AI from its edit page.
+              </p>
+            )}
           </div>
 
           {/* Blog-specific */}

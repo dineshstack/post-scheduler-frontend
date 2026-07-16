@@ -160,6 +160,12 @@ export const postsApi = {
     return data
   },
 
+  // AI-generated on-brand cover (headline + gradient) — saved into the media library
+  generateCover: async (id: number): Promise<GalleryItem> => {
+    const { data } = await http.post<{ item: GalleryItem }>(`/posts/${id}/cover`)
+    return data.item
+  },
+
   calendar: async (from: string, to: string): Promise<CalendarPostsResponse> => {
     const { data } = await http.get<CalendarPostsResponse>('/calendar', {
       params: { from, to },

@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { analyticsApi, analyticsInsightsApi, authApi, blogMetaApi, galleryApi, platformAccountsApi, postIdeasApi, postsApi, seoApi } from '@/lib/api'
 import { useAuthStore } from '@/lib/stores/auth.store'
-import type { StorePostIdeaPayload, StorePostPayload } from '@/lib/types'
+import type { Post, StorePostIdeaPayload, StorePostPayload } from '@/lib/types'
 
 //  Query keys 
 
@@ -102,6 +102,21 @@ export function useGeneratePreviews(id: number) {
       toast.success('✨ Previews generated — this is exactly what each platform will receive.')
     },
     onError: () => toast.error('Failed to generate previews.'),
+  })
+}
+
+export function useGenerateCover(id: number) {
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => postsApi.generateCover(id),
+    onSuccess: (item) => {
+      qc.setQueryData(queryKeys.post(id), (post: Post | undefined) =>
+        post ? { ...post, media_urls: [item.full_url, ...(post.media_urls ?? [])] } : post
+      )
+      toast.success('✨ Cover generated.')
+    },
+    onError: () => toast.error('Failed to generate cover. Please try again.'),
   })
 }
 
