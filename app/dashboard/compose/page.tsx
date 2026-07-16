@@ -36,6 +36,11 @@ const PANEL_PLATFORMS = new Set<Platform>(['blog', 'devto', 'medium'])
 // Platforms that get an AI-written teaser + tracked blog link — previewable after saving
 const AI_TEASER_PLATFORMS = new Set<Platform>(['twitter', 'linkedin', 'facebook', 'devto'])
 
+// Platforms with no connect flow (no auto-publish is possible) but still
+// worth selecting for their AI-suggested content — e.g. Medium's API is
+// retired, but its Topics/subtitle assist still needs the platform picked.
+const MANUAL_ASSIST_PLATFORMS: Platform[] = ['medium']
+
 const PLATFORM_META: Record<Platform, { label: string; icon: string; charLimit: number }> = {
   twitter:   { label: 'Twitter / X',  icon: '𝕏',  charLimit: 280 },
   linkedin:  { label: 'LinkedIn',      icon: '💼', charLimit: 3000 },
@@ -105,14 +110,16 @@ type FormValues = z.infer<typeof schema>
 //  Platform selector
 
 function PlatformSelector({
-  connected, selected, onChange,
+  connected, manual, selected, onChange,
 }: {
-  connected: Platform[]; selected: Platform[]; onChange: (p: Platform[]) => void
+  connected: Platform[]; manual: Platform[]; selected: Platform[]; onChange: (p: Platform[]) => void
 }) {
   const toggle = (p: Platform) =>
     onChange(selected.includes(p) ? selected.filter((x) => x !== p) : [...selected, p])
 
-  if (!connected.length) {
+  const selectable = [...connected, ...manual.filter((p) => !connected.includes(p))]
+
+  if (!selectable.length) {
     return (
       <p className="text-xs text-[var(--text-faint)]">
         No active accounts.{' '}
@@ -123,9 +130,10 @@ function PlatformSelector({
 
   return (
     <div className="flex flex-wrap gap-2">
-      {connected.map((p) => {
-        const meta   = PLATFORM_META[p]
-        const active = selected.includes(p)
+      {selectable.map((p) => {
+        const meta     = PLATFORM_META[p]
+        const active   = selected.includes(p)
+        const isManual = manual.includes(p) && !connected.includes(p)
         return (
           <button key={p} type="button" onClick={() => toggle(p)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
@@ -133,8 +141,10 @@ function PlatformSelector({
                 ? 'bg-[var(--accent-subtle)] border-[var(--accent)] text-[var(--accent-text)]'
                 : 'border-[var(--line)] text-[var(--text-muted)] hover:border-[var(--accent)]/60'
             }`}
+            title={isManual ? 'No auto-publish — AI suggests content to copy manually' : undefined}
           >
             <span>{meta.icon}</span> {meta.label}
+            {isManual && <span className="text-[9px] opacity-70">(manual)</span>}
           </button>
         )
       })}
@@ -414,6 +424,7 @@ export default function ComposePage() {
               render={({ field }) => (
                 <PlatformSelector
                   connected={connectedPlatforms}
+                  manual={MANUAL_ASSIST_PLATFORMS}
                   selected={field.value as Platform[]}
                   onChange={field.onChange}
                 />
