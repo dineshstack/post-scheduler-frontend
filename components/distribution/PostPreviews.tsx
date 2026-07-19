@@ -318,11 +318,19 @@ export default function PostPreviews({ post }: { post: Post }) {
   const lint     = data?.lint
   const hasAny   = Object.keys(previews).length > 0
 
+  // A platform that already sent is frozen — the backend never lets a
+  // regenerate touch it. Only platforms with nothing sent yet (never
+  // generated, or added to the post after it published) are worth a
+  // "Generate/Regenerate" action; if every target already sent, the button
+  // would just be a no-op round trip.
+  const pendingTargets = socialTargets.filter((p) => !previews[p]?.sent_at)
+  const canGenerate    = pendingTargets.length > 0
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Previews</CardTitle>
-        {!isPublished && socialTargets.length > 0 && (
+        {canGenerate && (
           <Button type="button" size="sm" variant={hasAny ? 'outline' : 'primary'} onClick={() => generate()} disabled={generating}>
             {generating
               ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -379,9 +387,9 @@ export default function PostPreviews({ post }: { post: Post }) {
                 <p className="text-sm text-[var(--text-faint)] py-4 text-center">Loading…</p>
               ) : !preview ? (
                 <p className="text-sm text-[var(--text-faint)] py-4 text-center">
-                  {isPublished
-                    ? 'This was published before per-platform send records were kept — no copy on file.'
-                    : 'Click Generate previews above to see the AI-written copy for this platform.'}
+                  {canGenerate
+                    ? 'Click Generate previews above to see the AI-written copy for this platform.'
+                    : 'This was published before per-platform send records were kept — no copy on file.'}
                 </p>
               ) : (
                 <div className="space-y-2">
