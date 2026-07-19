@@ -32,6 +32,7 @@ interface Props {
   value:      string
   onChange:   (value: string) => void
   minHeight?: number
+  disabled?:  boolean
 }
 
 // Upload adapter — sends to post-scheduler gallery API using Bearer token from cookie
@@ -68,7 +69,7 @@ function GalleryUploadPlugin(editor: any) {
     new GalleryUploadAdapter(loader)
 }
 
-export default function CKEditorField({ value, onChange, minHeight = 480 }: Props) {
+export default function CKEditorField({ value, onChange, minHeight = 480, disabled = false }: Props) {
   return (
     <div className="ck-editor-wrapper">
       <style>{`
@@ -176,6 +177,7 @@ export default function CKEditorField({ value, onChange, minHeight = 480 }: Prop
       <CKEditor
         editor={ClassicEditor}
         data={value}
+        disabled={disabled}
         config={{
           licenseKey: 'GPL',
           plugins: [

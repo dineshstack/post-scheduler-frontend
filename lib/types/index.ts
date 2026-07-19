@@ -175,6 +175,9 @@ export interface StorePostPayload {
   blog_slug?: string
   blog_post_type?: 'article' | 'tutorial' | 'case_study' | 'tip'
   blog_locale?: 'en' | 'si' | 'ar'
+  // Required to change title/body/media/blog settings on a post that has
+  // already published — see PostController::update's content lock.
+  force_content_edit?: boolean
 }
 
 // Best times to post

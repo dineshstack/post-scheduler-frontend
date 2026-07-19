@@ -6,11 +6,11 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import dynamic from 'next/dynamic'
-import { ChevronDown, ChevronUp, Image, Loader2, Save, Send, Sparkles, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, Image, Loader2, Lock, Save, Send, Sparkles, Unlock, X } from 'lucide-react'
 import AppLayout from '@/components/layout/AppLayout'
 import { Button, Input, Textarea, DateTimePicker } from '@/components/ui'
 import MediaLibraryModal from '@/components/media/MediaLibraryModal'
-import { useGenerateCover, usePlatformAccounts, usePost, useUpdatePost } from '@/lib/hooks'
+import { useGenerateCover, usePlatformAccounts, usePost, usePublishNow, useUpdatePost } from '@/lib/hooks'
 import BlogSettingsPanel from '@/components/blog/BlogSettingsPanel'
 import BlogSeoChecklist from '@/components/blog/BlogSeoChecklist'
 import DevToSettingsPanel from '@/components/devto/DevToSettingsPanel'
@@ -209,11 +209,21 @@ export default function EditPostPage() {
   const { data: accounts } = usePlatformAccounts()
   const { mutate: updatePost, isPending } = useUpdatePost(postId)
   const { mutate: generateCover, isPending: generatingCover } = useGenerateCover(postId)
+  const { mutate: publishNow, isPending: publishingNow } = usePublishNow()
 
   const [mediaOpen, setMediaOpen]       = useState(false)
   const [mediaItems, setMediaItems]     = useState<GalleryItem[]>([])
   const [scheduleMode, setScheduleMode] = useState<'now' | 'schedule'>('now')
   const [coverPreview, setCoverPreview] = useState('')
+
+  // A published (or partially failed-after-publish) post already has live
+  // content out in the world — routine edits here (e.g. adding LinkedIn for
+  // its AI preview) must default to touching only distribution settings.
+  // Editing the actual title/body/cover/blog SEO requires this explicit
+  // opt-in, mirrored by the backend's force_content_edit gate.
+  const isLocked = post ? post.status === 'published' || post.status === 'failed' : false
+  const [contentUnlocked, setContentUnlocked] = useState(false)
+  const contentDisabled = isLocked && !contentUnlocked
 
   const connectedPlatforms = (accounts ?? [])
     .filter((a) => a.is_active)
@@ -247,7 +257,15 @@ export default function EditPostPage() {
       first_comment:  post.first_comment ?? '',
       overrides,
     })
-    if (post.scheduled_at) setScheduleMode('schedule')
+    // published_at/scheduled_at is never cleared by the publish pipeline, so
+    // a published (or failed) post can still carry its original — now past
+    // — schedule time. Auto-entering "schedule" mode on it would show that
+    // stale date and, if resubmitted unchanged, fail the backend's
+    // scheduled_at-must-be-in-the-future check. Only draft/scheduled posts
+    // should auto-open in schedule mode.
+    if (post.scheduled_at && post.status !== 'published' && post.status !== 'failed') {
+      setScheduleMode('schedule')
+    }
     if (post.media_urls?.length) {
       setMediaItems(post.media_urls.map((url, i) => ({
         id: -(i + 1), name: null, alt: null, full_url: url, folder_id: null, media_id: 0,
@@ -265,7 +283,7 @@ export default function EditPostPage() {
   const wordCount = bodyHtml.replace(/<[^>]+>/g, '').split(/\s+/).filter(Boolean).length
   const readTime  = Math.max(1, Math.ceil(wordCount / 200))
 
-  const onSubmit = (values: FormValues, action: 'draft' | 'schedule') => {
+  const buildOverrides = (values: FormValues): Record<string, object> => {
     const perOverrides: Record<string, object> = {}
     Object.entries(values.overrides ?? {}).forEach(([p, v]) => {
       if (PANEL_PLATFORMS.has(p as Platform)) {
@@ -274,19 +292,64 @@ export default function EditPostPage() {
         perOverrides[p] = { body: v.body }
       }
     })
+    return perOverrides
+  }
 
+  // Draft/scheduled posts: full routine edit, unchanged behaviour.
+  const onSubmit = (values: FormValues, action: 'draft' | 'schedule') => {
     updatePost(
       {
         title:                  values.title,
         body:                   values.body,
         platforms:              values.platforms as Platform[],
         media_urls:             mediaItems.filter((i) => i.id > 0).map((i) => i.full_url),
-        per_platform_overrides: Object.keys(perOverrides).length ? perOverrides : undefined,
+        per_platform_overrides: (() => { const o = buildOverrides(values); return Object.keys(o).length ? o : undefined })(),
         scheduled_at:           action === 'schedule' ? values.scheduled_at ?? null : null,
         status:                 action === 'draft' ? 'draft' : 'scheduled',
         blog_slug:              hasBlog ? values.blog_slug : undefined,
         blog_post_type:         hasBlog ? (values.blog_post_type ?? 'article') : undefined,
         blog_locale:            hasBlog ? (values.blog_locale ?? 'en') : undefined,
+        notes:                  values.notes,
+        first_comment:          values.first_comment || undefined,
+      },
+      { onSuccess: () => router.push('/dashboard/posts') }
+    )
+  }
+
+  // Published/failed post, explicitly unlocked: same content payload as
+  // above, flagged so the backend's content lock allows it. status/scheduled_at
+  // are never sent — the live post stays untouched until an explicit "Republish now".
+  const onSubmitContentEdit = (values: FormValues) => {
+    const overrides = buildOverrides(values)
+    updatePost(
+      {
+        title:                  values.title,
+        body:                   values.body,
+        platforms:              values.platforms as Platform[],
+        media_urls:             mediaItems.filter((i) => i.id > 0).map((i) => i.full_url),
+        per_platform_overrides: Object.keys(overrides).length ? overrides : undefined,
+        blog_slug:              hasBlog ? values.blog_slug : undefined,
+        blog_post_type:         hasBlog ? (values.blog_post_type ?? 'article') : undefined,
+        blog_locale:            hasBlog ? (values.blog_locale ?? 'en') : undefined,
+        notes:                  values.notes,
+        first_comment:          values.first_comment || undefined,
+        force_content_edit:     true,
+      },
+      { onSuccess: () => setContentUnlocked(false) }
+    )
+  }
+
+  // Published/failed post, locked (default): distribution only — add/remove
+  // platforms and edit their AI-preview copy, never sending the title, body,
+  // cover, or blog SEO fields the backend keeps locked.
+  const onSubmitDistribution = (values: FormValues) => {
+    const overrides = buildOverrides(values)
+    delete overrides['blog']
+
+    updatePost(
+      {
+        platforms:              values.platforms as Platform[],
+        per_platform_overrides: Object.keys(overrides).length ? overrides : undefined,
         notes:                  values.notes,
         first_comment:          values.first_comment || undefined,
       },
@@ -323,8 +386,9 @@ export default function EditPostPage() {
             </div>
             <input
               {...register('title')}
+              disabled={contentDisabled}
               placeholder="Enter post title"
-              className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface-card)] px-4 py-3 text-xl font-bold text-[var(--text-base)] placeholder:text-[var(--text-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-colors"
+              className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface-card)] px-4 py-3 text-xl font-bold text-[var(--text-base)] placeholder:text-[var(--text-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             />
             {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title.message}</p>}
           </div>
@@ -336,7 +400,7 @@ export default function EditPostPage() {
               name="body"
               control={control}
               render={({ field }) => (
-                <CKEditorField value={field.value} onChange={field.onChange} />
+                <CKEditorField value={field.value} onChange={field.onChange} disabled={contentDisabled} />
               )}
             />
             {errors.body && <p className="text-xs text-red-500 mt-1">{errors.body.message}</p>}
@@ -359,55 +423,113 @@ export default function EditPostPage() {
           {hasBlog && <BlogSeoChecklist />}
 
           {/* Action buttons */}
-          <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-card)] p-4 space-y-3">
-            <h3 className="font-semibold text-sm text-[var(--text-base)]">Publish</h3>
+          {isLocked ? (
+            <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-card)] p-4 space-y-3">
+              <div className="flex items-center gap-1.5">
+                {contentUnlocked ? <Unlock className="h-3.5 w-3.5 text-[var(--accent)]" /> : <Lock className="h-3.5 w-3.5 text-[var(--text-faint)]" />}
+                <h3 className="font-semibold text-sm text-[var(--text-base)]">
+                  {post?.status === 'published' ? 'Published' : 'Failed'}
+                </h3>
+              </div>
 
-            <div className="flex gap-2">
-              {(['now', 'schedule'] as const).map((mode) => (
-                <button key={mode} type="button" onClick={() => setScheduleMode(mode)}
-                  className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                    scheduleMode === mode
-                      ? 'bg-[var(--accent-subtle)] border-[var(--accent)] text-[var(--accent-text)]'
-                      : 'border-[var(--line)] text-[var(--text-muted)] hover:border-[var(--accent)]/50'
-                  }`}
-                >
-                  {mode === 'now' ? 'Save draft' : 'Schedule'}
-                </button>
-              ))}
-            </div>
+              <p className="text-xs text-[var(--text-faint)] leading-relaxed">
+                {contentUnlocked
+                  ? 'Editing live content — title, body, cover, and blog settings can now change. Save, then use "Republish now" to push the update live.'
+                  : 'Content is locked so it can’t drift from what’s live. You can still add platforms or edit their AI-preview copy for manual sharing.'}
+              </p>
 
-            {scheduleMode === 'schedule' && (
-              <Controller
-                name="scheduled_at"
-                control={control}
-                render={({ field }) => (
-                  <DateTimePicker value={field.value ?? ''} onChange={field.onChange} />
-                )}
-              />
-            )}
-
-            <div className="flex flex-col gap-2 pt-1">
-              <Button type="button" variant="ghost" size="sm" onClick={() => router.back()}>
-                Cancel
-              </Button>
-              <Button
-                type="button" size="sm" variant="secondary"
-                loading={isPending}
-                onClick={handleSubmit((v) => onSubmit(v, 'draft'))}
+              <button
+                type="button"
+                onClick={() => setContentUnlocked((v) => !v)}
+                className="flex items-center gap-1.5 text-xs font-medium text-[var(--accent)] hover:underline"
               >
-                <Save className="h-3.5 w-3.5" /> Save draft
-              </Button>
-              {scheduleMode === 'schedule' && (
-                <Button
-                  type="button" size="sm"
-                  loading={isPending}
-                  onClick={handleSubmit((v) => onSubmit(v, 'schedule'))}
-                >
-                  <Send className="h-3.5 w-3.5" /> Update schedule
+                {contentUnlocked ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
+                {contentUnlocked ? 'Lock content again' : 'Unlock to edit live content'}
+              </button>
+
+              <div className="flex flex-col gap-2 pt-1">
+                <Button type="button" variant="ghost" size="sm" onClick={() => router.back()}>
+                  Cancel
                 </Button>
-              )}
+                {contentUnlocked ? (
+                  <>
+                    <Button
+                      type="button" size="sm"
+                      loading={isPending}
+                      onClick={handleSubmit((v) => onSubmitContentEdit(v))}
+                    >
+                      <Save className="h-3.5 w-3.5" /> Save content changes
+                    </Button>
+                    <Button
+                      type="button" size="sm" variant="secondary"
+                      loading={publishingNow}
+                      onClick={() => publishNow(postId)}
+                    >
+                      <Send className="h-3.5 w-3.5" /> Republish now
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    type="button" size="sm"
+                    loading={isPending}
+                    onClick={handleSubmit((v) => onSubmitDistribution(v))}
+                  >
+                    <Save className="h-3.5 w-3.5" /> Save changes
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-card)] p-4 space-y-3">
+              <h3 className="font-semibold text-sm text-[var(--text-base)]">Publish</h3>
+
+              <div className="flex gap-2">
+                {(['now', 'schedule'] as const).map((mode) => (
+                  <button key={mode} type="button" onClick={() => setScheduleMode(mode)}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                      scheduleMode === mode
+                        ? 'bg-[var(--accent-subtle)] border-[var(--accent)] text-[var(--accent-text)]'
+                        : 'border-[var(--line)] text-[var(--text-muted)] hover:border-[var(--accent)]/50'
+                    }`}
+                  >
+                    {mode === 'now' ? 'Save draft' : 'Schedule'}
+                  </button>
+                ))}
+              </div>
+
+              {scheduleMode === 'schedule' && (
+                <Controller
+                  name="scheduled_at"
+                  control={control}
+                  render={({ field }) => (
+                    <DateTimePicker value={field.value ?? ''} onChange={field.onChange} />
+                  )}
+                />
+              )}
+
+              <div className="flex flex-col gap-2 pt-1">
+                <Button type="button" variant="ghost" size="sm" onClick={() => router.back()}>
+                  Cancel
+                </Button>
+                <Button
+                  type="button" size="sm" variant="secondary"
+                  loading={isPending}
+                  onClick={handleSubmit((v) => onSubmit(v, 'draft'))}
+                >
+                  <Save className="h-3.5 w-3.5" /> Save draft
+                </Button>
+                {scheduleMode === 'schedule' && (
+                  <Button
+                    type="button" size="sm"
+                    loading={isPending}
+                    onClick={handleSubmit((v) => onSubmit(v, 'schedule'))}
+                  >
+                    <Send className="h-3.5 w-3.5" /> Update schedule
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Platforms */}
           <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-card)] p-4 space-y-3">
@@ -436,12 +558,21 @@ export default function EditPostPage() {
             {coverPreview ? (
               <div className="relative rounded-xl overflow-hidden aspect-video bg-[var(--surface-subtle)]">
                 <img src={coverPreview} alt="Cover" className="w-full h-full object-cover" />
-                <button type="button" onClick={() => setCoverPreview('')}
-                  className="absolute top-2 right-2 p-1 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
+                {!contentDisabled && (
+                  <button type="button" onClick={() => setCoverPreview('')}
+                    className="absolute top-2 right-2 p-1 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
+            ) : contentDisabled ? (
+              mediaItems.length === 0 && (
+                <div className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[var(--line)] aspect-video">
+                  <Image className="h-7 w-7 text-[var(--text-faint)]" />
+                  <span className="text-xs text-[var(--text-faint)]">No cover</span>
+                </div>
+              )
             ) : (
               <label className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[var(--line)] aspect-video cursor-pointer hover:border-[var(--accent)] hover:bg-[var(--accent-subtle)] transition-colors">
                 <Image className="h-7 w-7 text-[var(--text-faint)]" />
@@ -457,38 +588,46 @@ export default function EditPostPage() {
                 {mediaItems.map((item, idx) => (
                   <div key={item.id} className="relative h-14 w-14 rounded-lg overflow-hidden border border-[var(--line)]">
                     <img src={item.full_url} alt={item.alt ?? ''} className="w-full h-full object-cover" />
-                    <button type="button"
-                      onClick={() => setMediaItems((prev) => prev.filter((_, i) => i !== idx))}
-                      className="absolute top-0.5 right-0.5 h-4 w-4 rounded-full bg-black/60 flex items-center justify-center"
-                    >
-                      <X className="h-2.5 w-2.5 text-white" />
-                    </button>
+                    {!contentDisabled && (
+                      <button type="button"
+                        onClick={() => setMediaItems((prev) => prev.filter((_, i) => i !== idx))}
+                        className="absolute top-0.5 right-0.5 h-4 w-4 rounded-full bg-black/60 flex items-center justify-center"
+                      >
+                        <X className="h-2.5 w-2.5 text-white" />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
             )}
 
-            {mediaItems.length === 0 && !coverPreview && (
+            {mediaItems.length === 0 && !coverPreview && !contentDisabled && (
               <p className="flex items-start gap-1.5 text-[11px] text-[var(--text-faint)]">
                 <Sparkles className="h-3 w-3 shrink-0 mt-0.5 text-[var(--accent)]" />
                 No cover yet — generate an on-brand one with AI, or add your own from the gallery.
               </p>
             )}
 
-            <div className="flex gap-2">
-              <Button type="button" variant="secondary" size="sm" className="flex-1" onClick={() => setMediaOpen(true)}>
-                <Image className="h-3.5 w-3.5" /> Add from gallery
-              </Button>
-              <Button
-                type="button" variant="secondary" size="sm" className="flex-1"
-                loading={generatingCover}
-                onClick={() => generateCover(undefined, {
-                  onSuccess: (item) => setMediaItems((prev) => [item, ...prev]),
-                })}
-              >
-                <Sparkles className="h-3.5 w-3.5" /> Generate cover
-              </Button>
-            </div>
+            {contentDisabled ? (
+              <p className="text-[11px] text-[var(--text-faint)]">
+                Cover is locked. Unlock to edit live content to change it.
+              </p>
+            ) : (
+              <div className="flex gap-2">
+                <Button type="button" variant="secondary" size="sm" className="flex-1" onClick={() => setMediaOpen(true)}>
+                  <Image className="h-3.5 w-3.5" /> Add from gallery
+                </Button>
+                <Button
+                  type="button" variant="secondary" size="sm" className="flex-1"
+                  loading={generatingCover}
+                  onClick={() => generateCover(undefined, {
+                    onSuccess: (item) => setMediaItems((prev) => [item, ...prev]),
+                  })}
+                >
+                  <Sparkles className="h-3.5 w-3.5" /> Generate cover
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Blog settings */}
@@ -500,7 +639,8 @@ export default function EditPostPage() {
                 <label className={labelCls}>Post type *</label>
                 <select
                   {...register('blog_post_type')}
-                  className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface-subtle)] px-4 py-2.5 text-sm text-[var(--text-base)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] transition-colors"
+                  disabled={contentDisabled}
+                  className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface-subtle)] px-4 py-2.5 text-sm text-[var(--text-base)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <option value="article">Article</option>
                   <option value="tutorial">Tutorial</option>
@@ -513,7 +653,8 @@ export default function EditPostPage() {
                 <label className={labelCls}>Language</label>
                 <select
                   {...register('blog_locale')}
-                  className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface-subtle)] px-4 py-2.5 text-sm text-[var(--text-base)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] transition-colors"
+                  disabled={contentDisabled}
+                  className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface-subtle)] px-4 py-2.5 text-sm text-[var(--text-base)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <option value="en">🇬🇧 English</option>
                   <option value="si">🇱🇰 Sinhala</option>
@@ -525,14 +666,21 @@ export default function EditPostPage() {
                 label="Slug (optional)"
                 placeholder="my-awesome-post"
                 hint="Leave blank to keep existing slug"
+                disabled={contentDisabled}
                 {...register('blog_slug')}
               />
 
-              <BlogSettingsPanel
-                value={watchedOverrides['blog'] ?? {}}
-                onChange={(v) => setValue('overrides.blog', v, { shouldDirty: true })}
-                postType={watch('blog_post_type') as 'article' | 'tutorial' | 'case_study' | 'tip' | undefined}
-              />
+              {contentDisabled ? (
+                <p className="text-xs text-[var(--text-faint)] rounded-xl border border-dashed border-[var(--line)] p-3">
+                  Blog SEO settings (meta title/description, excerpt, tags, and more) are locked because this post is already published. Unlock content editing above to change them.
+                </p>
+              ) : (
+                <BlogSettingsPanel
+                  value={watchedOverrides['blog'] ?? {}}
+                  onChange={(v) => setValue('overrides.blog', v, { shouldDirty: true })}
+                  postType={watch('blog_post_type') as 'article' | 'tutorial' | 'case_study' | 'tip' | undefined}
+                />
+              )}
             </div>
           )}
 
