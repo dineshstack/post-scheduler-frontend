@@ -374,7 +374,7 @@ export default function EditPostPage() {
 
   return (
     <AppLayout title="Edit Post">
-      <form className="grid lg:grid-cols-[1fr_300px] gap-6 max-w-6xl">
+      <form className="grid lg:grid-cols-[1fr_300px] gap-6 max-w-6xl pb-20 lg:pb-0">
 
         {/*  Main column  */}
         <div className="space-y-5">
@@ -750,6 +750,43 @@ export default function EditPostPage() {
           </div>
         </div>
       </form>
+
+      {/* Mobile sticky action bar — mirrors the sidebar's Publish/locked-state
+          actions so they're reachable without scrolling past a long article. */}
+      <div className="lg:hidden fixed inset-x-0 bottom-0 z-30 flex gap-2 border-t border-[var(--line)] bg-[var(--surface-card)]/95 backdrop-blur-md p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        {isLocked ? (
+          contentUnlocked ? (
+            <>
+              <Button type="button" size="sm" className="flex-1" loading={isPending}
+                onClick={handleSubmit((v) => onSubmitContentEdit(v))}>
+                <Save className="h-3.5 w-3.5" /> Save
+              </Button>
+              <Button type="button" size="sm" variant="secondary" className="flex-1" loading={publishingNow}
+                onClick={() => publishNow(postId)}>
+                <Send className="h-3.5 w-3.5" /> Republish
+              </Button>
+            </>
+          ) : (
+            <Button type="button" size="sm" className="flex-1" loading={isPending}
+              onClick={handleSubmit((v) => onSubmitDistribution(v))}>
+              <Save className="h-3.5 w-3.5" /> Save changes
+            </Button>
+          )
+        ) : (
+          <>
+            <Button type="button" size="sm" variant="secondary" className="flex-1" loading={isPending}
+              onClick={handleSubmit((v) => onSubmit(v, 'draft'))}>
+              <Save className="h-3.5 w-3.5" /> Save draft
+            </Button>
+            {scheduleMode === 'schedule' && (
+              <Button type="button" size="sm" className="flex-1" loading={isPending}
+                onClick={handleSubmit((v) => onSubmit(v, 'schedule'))}>
+                <Send className="h-3.5 w-3.5" /> Schedule
+              </Button>
+            )}
+          </>
+        )}
+      </div>
 
       <MediaLibraryModal
         open={mediaOpen}

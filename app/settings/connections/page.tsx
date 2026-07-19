@@ -37,10 +37,10 @@ function OAuthPlatformCard({ platform, label, icon, description, account }: {
 
   return (
     <>
-      <div className="flex items-center justify-between p-4">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl leading-none">{icon}</span>
-          <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="text-2xl leading-none shrink-0">{icon}</span>
+          <div className="min-w-0">
             <p className="text-sm font-medium text-[var(--text-base)]">{label}</p>
             {account ? (
               <p className="text-xs text-[var(--text-muted)]">
@@ -57,7 +57,7 @@ function OAuthPlatformCard({ platform, label, icon, description, account }: {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {account ? (
             <>
               <Button
@@ -263,14 +263,14 @@ function ConnectionsContent() {
         <CardHeader>
           <CardTitle>Blog (DineshStack)</CardTitle>
         </CardHeader>
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl leading-none">📝</span>
-            <div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="text-2xl leading-none shrink-0">📝</span>
+            <div className="min-w-0">
               <p className="text-sm font-medium text-[var(--text-base)]">DineshStack Blog</p>
               {blogAccount ? (
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                   <p className="text-xs text-[var(--text-muted)]">Connected as {blogAccount.account_name}</p>
                 </div>
               ) : (
@@ -295,14 +295,14 @@ function ConnectionsContent() {
         <CardHeader>
           <CardTitle>Dev.to</CardTitle>
         </CardHeader>
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl leading-none">👩‍💻</span>
-            <div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="text-2xl leading-none shrink-0">👩‍💻</span>
+            <div className="min-w-0">
               <p className="text-sm font-medium text-[var(--text-base)]">dev.to</p>
               {devtoAccount ? (
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                   <p className="text-xs text-[var(--text-muted)]">Connected as @{devtoAccount.account_name}</p>
                 </div>
               ) : (

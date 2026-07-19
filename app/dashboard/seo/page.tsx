@@ -355,7 +355,7 @@ function TechnicalTab({ signals }: { signals: { signal: string; rule: string }[]
       </p>
       <div className="rounded-xl border border-[var(--line)] overflow-hidden divide-y divide-[var(--line)]">
         {signals.map(({ signal, rule }, i) => (
-          <div key={i} className="grid grid-cols-[140px_1fr] gap-4 px-4 py-3 items-start">
+          <div key={i} className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-1 sm:gap-4 px-4 py-3 items-start">
             <p className="text-xs font-semibold text-[var(--text-base)]">{signal}</p>
             <p className="text-xs text-[var(--text-faint)]">{rule}</p>
           </div>

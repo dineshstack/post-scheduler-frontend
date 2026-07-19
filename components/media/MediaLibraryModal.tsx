@@ -103,9 +103,9 @@ export default function MediaLibraryModal({ open, onClose, onSelect, multiple = 
 
   return (
     <Modal open={open} onClose={onClose} title="Media Library" size="lg">
-      <div className="flex gap-4 h-[420px]">
-        {/* Sidebar — folder tree */}
-        <div className="w-44 shrink-0 overflow-y-auto border-r border-[var(--line)] pr-3">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 h-[70vh] sm:h-[420px]">
+        {/* Sidebar — folder tree (stacks above the grid on narrow screens) */}
+        <div className="max-h-28 sm:max-h-none sm:w-44 shrink-0 overflow-y-auto border-b sm:border-b-0 sm:border-r border-[var(--line)] pb-3 sm:pb-0 sm:pr-3">
           <button
             onClick={() => setFolderId(undefined)}
             className={`flex w-full items-center gap-1.5 px-2 py-1.5 rounded text-xs mb-2 transition-colors ${
@@ -128,7 +128,7 @@ export default function MediaLibraryModal({ open, onClose, onSelect, multiple = 
         {/* Main area */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Toolbar */}
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
             <Button
               variant="secondary" size="sm"
               onClick={() => fileRef.current?.click()}
@@ -180,7 +180,7 @@ export default function MediaLibraryModal({ open, onClose, onSelect, multiple = 
                 <p className="text-sm text-[var(--text-muted)]">No media yet</p>
               </div>
             ) : (
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {folders.map((f) => (
                   <button
                     key={f.id}

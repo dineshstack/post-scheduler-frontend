@@ -53,7 +53,7 @@ export default function Modal({ open, onClose, title, description, children, siz
         role="dialog"
         aria-modal
         className={cn(
-          'relative z-10 w-full bg-[var(--surface-card)] border border-[var(--line)] rounded-2xl shadow-xl',
+          'relative z-10 w-full max-h-[90vh] overflow-y-auto bg-[var(--surface-card)] border border-[var(--line)] rounded-2xl shadow-xl',
           'animate-in fade-in-0 zoom-in-95 duration-200',
           sizeMap[size],
           className

@@ -97,7 +97,7 @@ export default function PostsQueuePage() {
         ) : (
           <div className="divide-y divide-[var(--line)]">
             {data.data.map((post) => (
-              <div key={post.id} className="flex items-start gap-4 px-5 py-4 hover:bg-[var(--surface-subtle)] transition-colors">
+              <div key={post.id} className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 px-5 py-4 hover:bg-[var(--surface-subtle)] transition-colors">
                 <div className="flex-1 min-w-0">
                   <Link href={`/dashboard/posts/${post.id}`} className="text-sm font-medium text-[var(--text-base)] truncate hover:text-[var(--accent)] transition-colors block">
                     {post.title}
@@ -114,7 +114,7 @@ export default function PostsQueuePage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
                   {(post.status === 'draft' || post.status === 'scheduled' || post.status === 'failed') && (
                     <Button
                       variant="ghost" size="sm"

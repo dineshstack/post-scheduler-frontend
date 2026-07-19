@@ -358,50 +358,54 @@ export default function AnalyticsPage() {
                   No published posts in this period.
                 </p>
               ) : (
-                <div className="divide-y divide-[var(--line)]">
-                  {/* Header row */}
-                  <div className="grid grid-cols-[1fr_100px_80px_80px_80px_32px] gap-3 pb-2 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-faint)]">
-                    <span>Post</span>
-                    <span>Platform</span>
-                    <span className="text-right">Impressions</span>
-                    <span className="text-right">Likes</span>
-                    <span className="text-right">Engagement</span>
-                    <span />
-                  </div>
-
-                  {overview.top_posts.map((post, i) => (
-                    <div key={`${post.id}-${post.platform}-${i}`}
-                      className="grid grid-cols-[1fr_100px_80px_80px_80px_32px] gap-3 py-2.5 items-center">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-[var(--text-base)] truncate">{post.title || 'Untitled'}</p>
-                        {post.published_at && (
-                          <p className="text-xs text-[var(--text-faint)]">
-                            {format(new Date(post.published_at), 'MMM d, yyyy')}
-                          </p>
-                        )}
-                      </div>
-                      <div>
-                        <PlatformChips platforms={[post.platform as Platform]} />
-                      </div>
-                      <p className="text-sm text-right text-[var(--text-muted)]">{fmt(post.impressions)}</p>
-                      <p className="text-sm text-right text-[var(--text-muted)]">{fmt(post.likes)}</p>
-                      <p className="text-sm text-right text-[var(--text-muted)]">
-                        {post.engagement_rate != null ? `${post.engagement_rate}%` : '-'}
-                      </p>
-                      <div className="flex justify-end">
-                        {post.external_post_url && (
-                          <a
-                            href={post.external_post_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[var(--text-faint)] hover:text-[var(--accent)] transition-colors"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        )}
-                      </div>
+                // Six fixed-width columns don't fit a phone viewport — scroll
+                // horizontally within the card instead of squeezing/breaking.
+                <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+                  <div className="min-w-[560px] divide-y divide-[var(--line)]">
+                    {/* Header row */}
+                    <div className="grid grid-cols-[1fr_100px_80px_80px_80px_32px] gap-3 pb-2 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-faint)]">
+                      <span>Post</span>
+                      <span>Platform</span>
+                      <span className="text-right">Impressions</span>
+                      <span className="text-right">Likes</span>
+                      <span className="text-right">Engagement</span>
+                      <span />
                     </div>
-                  ))}
+
+                    {overview.top_posts.map((post, i) => (
+                      <div key={`${post.id}-${post.platform}-${i}`}
+                        className="grid grid-cols-[1fr_100px_80px_80px_80px_32px] gap-3 py-2.5 items-center">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-[var(--text-base)] truncate">{post.title || 'Untitled'}</p>
+                          {post.published_at && (
+                            <p className="text-xs text-[var(--text-faint)]">
+                              {format(new Date(post.published_at), 'MMM d, yyyy')}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <PlatformChips platforms={[post.platform as Platform]} />
+                        </div>
+                        <p className="text-sm text-right text-[var(--text-muted)]">{fmt(post.impressions)}</p>
+                        <p className="text-sm text-right text-[var(--text-muted)]">{fmt(post.likes)}</p>
+                        <p className="text-sm text-right text-[var(--text-muted)]">
+                          {post.engagement_rate != null ? `${post.engagement_rate}%` : '-'}
+                        </p>
+                        <div className="flex justify-end">
+                          {post.external_post_url && (
+                            <a
+                              href={post.external_post_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[var(--text-faint)] hover:text-[var(--accent)] transition-colors"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </CardContent>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import type { EventClickArg, DatesSetArg } from '@fullcalendar/core'
 import { formatDistanceToNow } from 'date-fns'
@@ -11,6 +11,7 @@ import type { CalendarPost } from '@/lib/types'
 
 import DayGridPlugin     from '@fullcalendar/daygrid'
 import InteractionPlugin from '@fullcalendar/interaction'
+import ListPlugin        from '@fullcalendar/list'
 
 // FullCalendar must be dynamically imported to avoid SSR issues
 const FullCalendar = dynamic(
@@ -72,6 +73,17 @@ export default function CalendarPage() {
   })
   const [selectedPost, setSelectedPost] = useState<CalendarPost | null>(null)
 
+  // The month grid's 7 tiny day-cells are unusable on a phone — switch to a
+  // scrollable agenda list below the `sm` breakpoint instead of shrinking it.
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 640px)')
+    const update = () => setIsMobile(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
+
   const { data: calendarData, isLoading } = useCalendar(range.from, range.to)
 
   const events = Object.entries(calendarData ?? {}).flatMap(([, posts]) =>
@@ -105,8 +117,11 @@ export default function CalendarPage() {
         {/* Calendar */}
         <div className="calendar-wrap rounded-xl overflow-hidden border border-[var(--line)] bg-[var(--surface-card)]">
           <FullCalendar
-            plugins={[DayGridPlugin, InteractionPlugin]}
-            initialView="dayGridMonth"
+            // Remounts on breakpoint change — initialView only applies at
+            // mount, so this key forces a clean switch between the two views.
+            key={isMobile ? 'mobile' : 'desktop'}
+            plugins={[DayGridPlugin, InteractionPlugin, ListPlugin]}
+            initialView={isMobile ? 'listWeek' : 'dayGridMonth'}
             headerToolbar={{
               left:   'prev,next today',
               center: 'title',
