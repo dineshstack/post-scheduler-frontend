@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import AppLayout from '@/components/layout/AppLayout'
 import { Button, Card, CardContent, CardHeader, CardTitle, PlatformChips, StatusBadge } from '@/components/ui'
+import CoverageChip from '@/components/distribution/CoverageChip'
 import {
   useAnalyticsBestTimes,
   useAnalyticsOverview,
@@ -342,6 +343,7 @@ export default function DashboardPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
+                          <CoverageChip post={post} connectedPlatforms={connectedPlatforms.map((a) => a.platform)} />
                           <StatusBadge status={post.status} />
                           {liveLog?.external_post_url && (
                             <a href={liveLog.external_post_url} target="_blank" rel="noopener noreferrer"
@@ -439,7 +441,10 @@ export default function DashboardPage() {
                     className="flex items-center gap-4 px-5 py-3.5 hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-colors">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-[var(--text-base)] truncate">{post.title}</p>
-                      <PlatformChips platforms={post.platforms} />
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <PlatformChips platforms={post.platforms} />
+                        <CoverageChip post={post} connectedPlatforms={connectedPlatforms.map((a) => a.platform)} />
+                      </div>
                     </div>
                     <Link href={`/dashboard/posts/${post.id}/edit`}>
                       <Button variant="ghost" size="sm"

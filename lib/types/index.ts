@@ -444,7 +444,11 @@ export interface SeoGuidelines {
 // what the publisher would send. Shape varies by platform.
 
 export interface DistributionPreview {
-  // twitter
+  // twitter — an AI-composed thread (1..max_thread_length tweets); `text`/
+  // `char_count` (singular) are legacy fields still present on previews
+  // stored before threads existed and never regenerated since.
+  tweets?: string[]
+  char_counts?: number[]
   text?: string
   char_count?: number
   limit?: number

@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { Edit2, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import AppLayout from '@/components/layout/AppLayout'
 import { Button, Card, ConfirmModal, Select, StatusBadge, PlatformChips } from '@/components/ui'
-import { usePosts, useDeletePost, usePublishNow } from '@/lib/hooks'
+import CoverageChip from '@/components/distribution/CoverageChip'
+import { usePosts, useDeletePost, usePlatformAccounts, usePublishNow } from '@/lib/hooks'
 import { formatScheduledAt } from '@/lib/utils'
 import type { Post } from '@/lib/types'
 
@@ -42,6 +43,8 @@ export default function PostsQueuePage() {
 
   const { mutate: deletePost,  isPending: deleting  } = useDeletePost()
   const { mutate: publishNow,  isPending: publishing } = usePublishNow()
+  const { data: accounts } = usePlatformAccounts()
+  const connectedPlatforms = (accounts ?? []).filter((a) => a.is_active).map((a) => a.platform)
 
   const handleDelete = () => {
     if (!deleteTarget) return
@@ -101,6 +104,7 @@ export default function PostsQueuePage() {
                   </Link>
                   <div className="flex flex-wrap items-center gap-2 mt-1.5">
                     <PlatformChips platforms={post.platforms} />
+                    <CoverageChip post={post} connectedPlatforms={connectedPlatforms} />
                     <StatusBadge status={post.status} />
                     {post.scheduled_at && (
                       <span className="text-xs text-[var(--text-faint)]">

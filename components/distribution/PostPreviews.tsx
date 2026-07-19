@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
+import { toast } from 'sonner'
 import {
-  AlertTriangle, CheckCircle2, ChevronDown, ChevronUp,
+  AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Copy,
   ExternalLink, Globe, Loader2, RefreshCw, Sparkles, XCircle,
 } from 'lucide-react'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
@@ -182,15 +183,55 @@ function BlogPreviewBody({ post }: { post: Post }) {
 
 function SocialPreviewBody({ platform, preview }: { platform: string; preview: DistributionPreview }) {
   if (platform === 'twitter') {
-    const over = (preview.char_count ?? 0) > (preview.limit ?? 280)
+    // `tweets`/`char_counts` (thread, current) with a fallback to the
+    // legacy singular `text`/`char_count` for previews stored before
+    // threads existed and never regenerated since.
+    const tweets = preview.tweets ?? (preview.text ? [preview.text] : [])
+    const counts = preview.char_counts ?? (preview.char_count != null ? [preview.char_count] : [])
+    const limit  = preview.limit ?? 280
+    const isThread = tweets.length > 1
+
+    const copy = (text: string) => {
+      navigator.clipboard.writeText(text)
+      toast.success('Copied to clipboard.')
+    }
+
     return (
-      <div className="space-y-2">
-        <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-subtle)] p-4">
-          <p className="text-sm text-[var(--text-base)] whitespace-pre-wrap break-words">{preview.text}</p>
-        </div>
-        <p className={`text-xs text-right font-medium ${over ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
-          {preview.char_count}/{preview.limit} chars (links count as 23)
-        </p>
+      <div className="space-y-3">
+        {isThread && (
+          <p className="flex items-center gap-1.5 text-[11px] text-[var(--text-faint)]">
+            <Sparkles className="h-3 w-3 shrink-0 text-[var(--accent)]" />
+            A {tweets.length}-tweet thread — post the first, then reply with each of the rest in order.
+          </p>
+        )}
+        {tweets.map((tweet, i) => {
+          const count = counts[i] ?? tweet.length
+          const over  = count > limit
+          return (
+            <div key={i} className="space-y-1">
+              <div className="flex items-center gap-2">
+                {isThread && (
+                  <span className="text-[11px] font-semibold text-[var(--text-faint)] shrink-0">
+                    {i + 1}/{tweets.length}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => copy(tweet)}
+                  className="ml-auto flex items-center gap-1 text-[11px] text-[var(--accent)] hover:underline"
+                >
+                  <Copy className="h-3 w-3" /> Copy
+                </button>
+              </div>
+              <div className="rounded-xl border border-[var(--line)] bg-[var(--surface-subtle)] p-4">
+                <p className="text-sm text-[var(--text-base)] whitespace-pre-wrap break-words">{tweet}</p>
+              </div>
+              <p className={`text-xs text-right font-medium ${over ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                {count}/{limit} chars (links count as 23)
+              </p>
+            </div>
+          )
+        })}
       </div>
     )
   }

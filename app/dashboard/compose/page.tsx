@@ -20,6 +20,7 @@ import DevToSettingsPanel from '@/components/devto/DevToSettingsPanel'
 import MediumSettingsPanel from '@/components/medium/MediumSettingsPanel'
 import { postsApi } from '@/lib/api'
 import { useAnalyticsBestTimes, useCreatePost, usePlatformAccounts } from '@/lib/hooks'
+import { nextOccurrenceOf } from '@/lib/utils'
 import type { Platform, GalleryItem, StorePostPayload } from '@/lib/types'
 
 const CKEditorField = dynamic(() => import('@/components/editor/CKEditorField'), {
@@ -43,8 +44,11 @@ const AI_TEASER_PLATFORMS = new Set<Platform>(['twitter', 'linkedin', 'facebook'
 // connected account — Medium has no connect flow at all (API retired); for
 // LinkedIn it's deliberate: a professional network warrants reviewing and
 // copy-pasting by hand even when auto-publish is possible, so it stays
-// pickable whether or not an account is connected.
-const MANUAL_ASSIST_PLATFORMS: Platform[] = ['medium', 'linkedin']
+// pickable whether or not an account is connected. Twitter: no paid X API
+// write access is set up yet, so its AI-composed thread is copy-paste only
+// for now — flips to real auto-publish automatically once an account is
+// connected, no code change needed.
+const MANUAL_ASSIST_PLATFORMS: Platform[] = ['medium', 'linkedin', 'twitter']
 
 const PLATFORM_META: Record<Platform, { label: string; icon: string; charLimit: number }> = {
   twitter:   { label: 'Twitter / X',  icon: '𝕏',  charLimit: 280 },
@@ -439,35 +443,47 @@ export default function ComposePage() {
             </div>
 
             {scheduleMode === 'schedule' && (
-              <>
-                <Controller
-                  name="scheduled_at"
-                  control={control}
-                  render={({ field }) => (
-                    <DateTimePicker
-                      value={field.value ?? ''}
-                      onChange={field.onChange}
-                    />
-                  )}
-                />
-                {/* Best-time hints */}
-                {watchedPlatforms.length > 0 && bestTimes?.best_times && (
-                  <div className="space-y-1.5">
-                    {watchedPlatforms.map((p) => {
-                      const top = bestTimes.best_times![p]?.[0]
-                      if (!top) return null
-                      return (
-                        <div key={p} className="flex items-center gap-1.5 text-[11px] text-[var(--text-faint)]">
-                          <Clock className="h-3 w-3 shrink-0" />
-                          <span>
-                            Best for {p}: <span className="text-[var(--text-muted)] font-medium">{top.day_name} {top.hour_label}</span>
-                          </span>
+              <Controller
+                name="scheduled_at"
+                control={control}
+                render={({ field }) => {
+                  const primary    = watchedPlatforms[0]
+                  const primaryTop = primary ? bestTimes?.best_times?.[primary]?.[0] : undefined
+                  const others     = watchedPlatforms.slice(1)
+                    .map((p) => ({ p, top: bestTimes?.best_times?.[p]?.[0] }))
+                    .filter((x): x is { p: Platform; top: NonNullable<typeof x.top> } => !!x.top)
+
+                  return (
+                    <>
+                      <DateTimePicker value={field.value ?? ''} onChange={field.onChange} />
+
+                      {primaryTop && (
+                        <button
+                          type="button"
+                          onClick={() => field.onChange(nextOccurrenceOf(primaryTop.day, primaryTop.hour).toISOString())}
+                          className="flex items-center gap-1.5 text-[11px] text-[var(--accent)] hover:underline"
+                        >
+                          <Sparkles className="h-3 w-3 shrink-0" />
+                          Use best time for {PLATFORM_META[primary].label}: {primaryTop.day_name} {primaryTop.hour_label}
+                        </button>
+                      )}
+
+                      {others.length > 0 && (
+                        <div className="space-y-1">
+                          {others.map(({ p, top }) => (
+                            <div key={p} className="flex items-center gap-1.5 text-[11px] text-[var(--text-faint)]">
+                              <Clock className="h-3 w-3 shrink-0" />
+                              <span>
+                                Best for {PLATFORM_META[p].label}: <span className="text-[var(--text-muted)] font-medium">{top.day_name} {top.hour_label}</span>
+                              </span>
+                            </div>
+                          ))}
                         </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </>
+                      )}
+                    </>
+                  )
+                }}
+              />
             )}
 
             <div className="flex flex-col gap-2 pt-1">
