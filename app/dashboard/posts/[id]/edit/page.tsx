@@ -31,10 +31,12 @@ const CKEditorField = dynamic(() => import('@/components/editor/CKEditorField'),
 // Platforms with dedicated settings panels — excluded from the generic overrides accordion
 const PANEL_PLATFORMS = new Set<Platform>(['blog', 'devto', 'medium'])
 
-// Platforms with no connect flow (no auto-publish is possible) but still
-// worth selecting for their AI-suggested content — e.g. Medium's API is
-// retired, but its Topics/subtitle assist still needs the platform picked.
-const MANUAL_ASSIST_PLATFORMS: Platform[] = ['medium']
+// Platforms always selectable for their AI-suggested content, even without a
+// connected account — Medium has no connect flow at all (API retired); for
+// LinkedIn it's deliberate: a professional network warrants reviewing and
+// copy-pasting by hand even when auto-publish is possible, so it stays
+// pickable whether or not an account is connected.
+const MANUAL_ASSIST_PLATFORMS: Platform[] = ['medium', 'linkedin']
 
 const PLATFORM_META: Record<Platform, { label: string; icon: string; charLimit: number }> = {
   twitter:   { label: 'Twitter / X',  icon: '𝕏',  charLimit: 280 },

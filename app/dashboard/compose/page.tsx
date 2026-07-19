@@ -6,6 +6,8 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import dynamic from 'next/dynamic'
+import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { ChevronDown, ChevronUp, Clock, Image, Loader2, Plus, Save, Send, Sparkles, X } from 'lucide-react'
 import AppLayout from '@/components/layout/AppLayout'
 import { Button, Input, Textarea, DateTimePicker } from '@/components/ui'
@@ -16,8 +18,9 @@ import BlogSettingsPanel from '@/components/blog/BlogSettingsPanel'
 import BlogSeoChecklist from '@/components/blog/BlogSeoChecklist'
 import DevToSettingsPanel from '@/components/devto/DevToSettingsPanel'
 import MediumSettingsPanel from '@/components/medium/MediumSettingsPanel'
+import { postsApi } from '@/lib/api'
 import { useAnalyticsBestTimes, useCreatePost, usePlatformAccounts } from '@/lib/hooks'
-import type { Platform, GalleryItem } from '@/lib/types'
+import type { Platform, GalleryItem, StorePostPayload } from '@/lib/types'
 
 const CKEditorField = dynamic(() => import('@/components/editor/CKEditorField'), {
   ssr: false,
@@ -36,10 +39,12 @@ const PANEL_PLATFORMS = new Set<Platform>(['blog', 'devto', 'medium'])
 // Platforms that get an AI-written teaser + tracked blog link — previewable after saving
 const AI_TEASER_PLATFORMS = new Set<Platform>(['twitter', 'linkedin', 'facebook', 'devto'])
 
-// Platforms with no connect flow (no auto-publish is possible) but still
-// worth selecting for their AI-suggested content — e.g. Medium's API is
-// retired, but its Topics/subtitle assist still needs the platform picked.
-const MANUAL_ASSIST_PLATFORMS: Platform[] = ['medium']
+// Platforms always selectable for their AI-suggested content, even without a
+// connected account — Medium has no connect flow at all (API retired); for
+// LinkedIn it's deliberate: a professional network warrants reviewing and
+// copy-pasting by hand even when auto-publish is possible, so it stays
+// pickable whether or not an account is connected.
+const MANUAL_ASSIST_PLATFORMS: Platform[] = ['medium', 'linkedin']
 
 const PLATFORM_META: Record<Platform, { label: string; icon: string; charLimit: number }> = {
   twitter:   { label: 'Twitter / X',  icon: '𝕏',  charLimit: 280 },
@@ -209,6 +214,7 @@ function OverridesAccordion({
 
 export default function ComposePage() {
   const router = useRouter()
+  const qc     = useQueryClient()
   const { data: accounts } = usePlatformAccounts()
   const { mutate: createPost, isPending } = useCreatePost()
   const { data: bestTimes } = useAnalyticsBestTimes()
@@ -219,6 +225,14 @@ export default function ComposePage() {
   const [coverPreview, setCoverPreview] = useState('')
   const [aiOpen,       setAiOpen]       = useState(false)
   const [seoTitleOpen, setSeoTitleOpen] = useState(false)
+
+  // Cover generation needs a real post id, but compose starts with none.
+  // The first click silently saves a draft so the AI has something to work
+  // from; later Save/Publish clicks then update that same draft instead of
+  // creating a second post.
+  const [pendingPostId, setPendingPostId]     = useState<number | null>(null)
+  const [generatingCover, setGeneratingCover] = useState(false)
+  const [savingDraft, setSavingDraft]         = useState(false)
 
   const connectedPlatforms = (accounts ?? [])
     .filter((a) => a.is_active)
@@ -242,7 +256,48 @@ export default function ComposePage() {
   const wordCount = bodyHtml.replace(/<[^>]+>/g, '').split(/\s+/).filter(Boolean).length
   const readTime  = Math.max(1, Math.ceil(wordCount / 200))
 
-  const submit = (values: FormValues, action: 'draft' | 'schedule' | 'publish') => {
+  // First click has no post yet — silently save a draft so the AI has a
+  // title/body to work from, then generate against that. Later clicks reuse
+  // the same draft id.
+  const handleGenerateCover = async () => {
+    const title = (watch('title') as string)?.trim()
+    if (!title) {
+      toast.error('Add a title first so AI has something to work with.')
+      return
+    }
+
+    setGeneratingCover(true)
+    try {
+      let id = pendingPostId
+
+      if (!id) {
+        const platforms = (watch('platforms') as Platform[])?.length
+          ? (watch('platforms') as Platform[])
+          : (['blog'] as Platform[])
+
+        const created = await postsApi.create({
+          title,
+          body: (watch('body') as string) || '<p></p>',
+          platforms,
+          status: 'draft',
+        })
+        id = created.id
+        setPendingPostId(id)
+        toast.success('Saved as a draft so AI can generate a cover — keep editing, nothing is published yet.')
+      }
+
+      const item = await postsApi.generateCover(id)
+      setMediaItems((prev) => [item, ...prev])
+      qc.invalidateQueries({ queryKey: ['gallery'] })
+      toast.success('✨ Cover generated.')
+    } catch {
+      toast.error('Failed to generate cover. Please try again.')
+    } finally {
+      setGeneratingCover(false)
+    }
+  }
+
+  const submit = async (values: FormValues, action: 'draft' | 'schedule' | 'publish') => {
     const perOverrides: Record<string, object> = {}
     Object.entries(values.overrides ?? {}).forEach(([p, v]) => {
       if (PANEL_PLATFORMS.has(p as Platform)) {
@@ -252,21 +307,40 @@ export default function ComposePage() {
       }
     })
 
+    const payload: StorePostPayload = {
+      title:                   values.title,
+      body:                    values.body,
+      platforms:               values.platforms as Platform[],
+      media_urls:              mediaItems.map((i) => i.full_url),
+      per_platform_overrides:  Object.keys(perOverrides).length ? perOverrides : undefined,
+      scheduled_at:            action === 'schedule' ? values.scheduled_at ?? null : null,
+      status:                  action === 'draft' ? 'draft' : 'scheduled',
+      blog_slug:               hasBlog ? values.blog_slug : undefined,
+      blog_post_type:          hasBlog ? (values.blog_post_type ?? 'article') : undefined,
+      blog_locale:             hasBlog ? (values.blog_locale ?? 'en') : undefined,
+      notes:                   values.notes,
+      first_comment:           values.first_comment || undefined,
+    }
+
+    // A cover was already generated earlier in this session — that silently
+    // created a draft, so finish by updating it rather than creating a
+    // second, duplicate post.
+    if (pendingPostId) {
+      setSavingDraft(true)
+      try {
+        await postsApi.update(pendingPostId, payload)
+        qc.invalidateQueries({ queryKey: ['posts'] })
+        router.push(`/dashboard/posts/${pendingPostId}`)
+      } catch {
+        toast.error('Failed to save post. Please try again.')
+      } finally {
+        setSavingDraft(false)
+      }
+      return
+    }
+
     createPost(
-      {
-        title:                   values.title,
-        body:                    values.body,
-        platforms:               values.platforms as Platform[],
-        media_urls:              mediaItems.map((i) => i.full_url),
-        per_platform_overrides:  Object.keys(perOverrides).length ? perOverrides : undefined,
-        scheduled_at:            action === 'schedule' ? values.scheduled_at ?? null : null,
-        status:                  action === 'draft' ? 'draft' : 'scheduled',
-        blog_slug:               hasBlog ? values.blog_slug : undefined,
-        blog_post_type:          hasBlog ? (values.blog_post_type ?? 'article') : undefined,
-        blog_locale:             hasBlog ? (values.blog_locale ?? 'en') : undefined,
-        notes:                   values.notes,
-        first_comment:           values.first_comment || undefined,
-      },
+      payload,
       // Land on the post's own page, not the list — that's where the AI
       // distribution preview (Twitter/LinkedIn/Facebook/dev.to teasers) lives.
       { onSuccess: (post) => router.push(`/dashboard/posts/${post.id}`) }
@@ -399,14 +473,14 @@ export default function ComposePage() {
             <div className="flex flex-col gap-2 pt-1">
               <Button
                 type="button" size="sm" variant="secondary"
-                loading={isPending}
+                loading={isPending || savingDraft}
                 onClick={handleSubmit((v) => submit(v, 'draft'))}
               >
                 <Save className="h-3.5 w-3.5" /> Save draft
               </Button>
               <Button
                 type="button" size="sm"
-                loading={isPending}
+                loading={isPending || savingDraft}
                 onClick={handleSubmit((v) => submit(v, scheduleMode === 'schedule' ? 'schedule' : 'publish'))}
               >
                 <Send className="h-3.5 w-3.5" />
@@ -489,14 +563,23 @@ export default function ComposePage() {
               </div>
             )}
 
-            <Button type="button" variant="secondary" size="sm" className="w-full" onClick={() => setMediaOpen(true)}>
-              <Plus className="h-3.5 w-3.5" /> Add from gallery
-            </Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="secondary" size="sm" className="flex-1" onClick={() => setMediaOpen(true)}>
+                <Plus className="h-3.5 w-3.5" /> Add from gallery
+              </Button>
+              <Button
+                type="button" variant="secondary" size="sm" className="flex-1"
+                loading={generatingCover}
+                onClick={handleGenerateCover}
+              >
+                <Sparkles className="h-3.5 w-3.5" /> Generate cover
+              </Button>
+            </div>
 
             {mediaItems.length === 0 && (
               <p className="flex items-start gap-1.5 text-[11px] text-[var(--text-faint)]">
                 <Sparkles className="h-3 w-3 shrink-0 mt-0.5 text-[var(--accent)]" />
-                No cover yet — save the post, then generate an on-brand one with AI from its edit page.
+                No cover yet — add a title, then generate an on-brand one with AI, or add your own from the gallery.
               </p>
             )}
           </div>

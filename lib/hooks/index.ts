@@ -114,6 +114,9 @@ export function useGenerateCover(id: number) {
       qc.setQueryData(queryKeys.post(id), (post: Post | undefined) =>
         post ? { ...post, media_urls: [item.full_url, ...(post.media_urls ?? [])] } : post
       )
+      // The gallery picker (MediaLibraryModal) reads a separate ['gallery', ...]
+      // query — without this it only shows the new cover after a hard refresh.
+      qc.invalidateQueries({ queryKey: ['gallery'] })
       toast.success('✨ Cover generated.')
     },
     onError: () => toast.error('Failed to generate cover. Please try again.'),
