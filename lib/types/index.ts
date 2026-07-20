@@ -87,6 +87,7 @@ export interface PerPlatformOverride {
   og_image?: string
   video_url?: string
   github_repo_url?: string
+  companion_code_url?: string
   is_premium?: boolean
   free_preview_paragraphs?: number
   llm_snippet?: string

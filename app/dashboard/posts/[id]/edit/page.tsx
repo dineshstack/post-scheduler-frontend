@@ -80,6 +80,7 @@ const schema = z.object({
     free_preview_paragraphs: z.number().min(1).max(20).optional(),
     video_url:        z.string().optional(),
     github_repo_url:  z.string().optional(),
+    companion_code_url: z.string().optional(),
     llm_snippet:      z.string().max(1000).optional(),
     faq: z.array(z.object({ question: z.string(), answer: z.string() })).optional(),
     last_reviewed_at: z.string().optional(),

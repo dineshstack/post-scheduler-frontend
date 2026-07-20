@@ -209,6 +209,21 @@ export default function BlogSettingsPanel({ value, onChange, postType }: Props) 
         </div>
       </div>
 
+      {/* Companion code (paid) — separate from the free github_repo_url above */}
+      <div>
+        <label className={labelCls}>Companion code URL (paid, e.g. Ko-fi)</label>
+        <input
+          type="url"
+          value={value.companion_code_url ?? ''}
+          onChange={(e) => set({ companion_code_url: e.target.value || undefined })}
+          placeholder="https://ko-fi.com/s/…"
+          className={inputCls}
+        />
+        <p className="text-[10px] text-[var(--text-faint)] mt-1">
+          Renders a &ldquo;Get the full working code&rdquo; button on the live post.
+        </p>
+      </div>
+
       {/* Options row */}
       <div className="flex flex-wrap gap-4">
         <label className="flex items-center gap-2 cursor-pointer select-none">
